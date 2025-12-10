@@ -1417,9 +1417,17 @@ async def rollback_onboarding(request, session_manager, task_service):
 
         # Only allow rollback if config was marked as edited (onboarding completed)
         if not current_config.edited:
+            logger.info("No onboarding configuration to rollback")
             return JSONResponse(
                 {"error": "No onboarding configuration to rollback"}, status_code=400
             )
+
+        from config.settings import INDEX_NAME
+        if await clients.opensearch.indices.exists(index=INDEX_NAME):
+            # DELETE /<index_name>
+            logger.info(f"Deleting index '{INDEX_NAME}'...")
+            resp = await clients.opensearch.indices.delete(index=INDEX_NAME)
+            logger.info(f"Deleted '{INDEX_NAME}': {resp}")
 
         user = request.state.user
         jwt_token = session_manager.get_effective_jwt_token(user.user_id, request.state.jwt_token)
