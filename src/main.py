@@ -66,7 +66,6 @@ from config.settings import (
     API_KEYS_INDEX_NAME,
     DISABLE_INGEST_WITH_LANGFLOW,
     INDEX_BODY,
-    INDEX_NAME,
     SESSION_SECRET,
     clients,
     get_embedding_model,
@@ -150,17 +149,18 @@ async def configure_alerting_security():
 
 async def _ensure_opensearch_index():
     """Ensure OpenSearch index exists when using traditional connector service."""
+    import config.settings as settings
     try:
         # Check if index already exists
-        if await clients.opensearch.indices.exists(index=INDEX_NAME):
-            logger.debug("OpenSearch index already exists", index_name=INDEX_NAME)
+        if await clients.opensearch.indices.exists(index=settings.INDEX_NAME):
+            logger.debug("OpenSearch index already exists", index_name=settings.INDEX_NAME)
             return
 
         # Create the index with hard-coded INDEX_BODY (uses OpenAI embedding dimensions)
-        await clients.opensearch.indices.create(index=INDEX_NAME, body=INDEX_BODY)
+        await clients.opensearch.indices.create(index=settings.INDEX_NAME, body=INDEX_BODY)
         logger.info(
             "Created OpenSearch index for traditional connector service",
-            index_name=INDEX_NAME,
+            index_name=settings.INDEX_NAME,
             vector_dimensions=INDEX_BODY["mappings"]["properties"]["chunk_embedding"][
                 "dimension"
             ],
@@ -171,7 +171,7 @@ async def _ensure_opensearch_index():
         logger.error(
             "Failed to initialize OpenSearch index for traditional connector service",
             error=str(e),
-            index_name=INDEX_NAME,
+            index_name=settings.INDEX_NAME,
         )
         await TelemetryClient.send_event(Category.OPENSEARCH_INDEX, MessageId.ORB_OS_INDEX_CREATE_FAIL)
         # Don't raise the exception to avoid breaking the initialization
@@ -180,6 +180,7 @@ async def _ensure_opensearch_index():
 
 async def init_index():
     """Initialize OpenSearch index and security roles"""
+    import config.settings as settings
     await wait_for_opensearch()
 
     # Get the configured embedding model from user configuration
@@ -196,27 +197,27 @@ async def init_index():
         endpoint=getattr(embedding_provider_config, "endpoint", None)
     )
 
-    if await clients.opensearch.indices.exists(index=INDEX_NAME):
+    if await clients.opensearch.indices.exists(index=settings.INDEX_NAME):
         # DELETE /<index_name>
-        logger.info(f"Deleting index '{INDEX_NAME}'...")
-        resp = await clients.opensearch.indices.delete(index=INDEX_NAME)
-        logger.info(f"Deleted '{INDEX_NAME}': {resp}")
+        logger.info(f"Deleting index '{settings.INDEX_NAME}'...")
+        resp = await clients.opensearch.indices.delete(index=settings.INDEX_NAME)
+        logger.info(f"Deleted '{settings.INDEX_NAME}': {resp}")
 
     # Create documents index
-    if not await clients.opensearch.indices.exists(index=INDEX_NAME):
+    if not await clients.opensearch.indices.exists(index=settings.INDEX_NAME):
         await clients.opensearch.indices.create(
-            index=INDEX_NAME, body=dynamic_index_body
+            index=settings.INDEX_NAME, body=dynamic_index_body
         )
         logger.info(
             "Created OpenSearch index",
-            index_name=INDEX_NAME,
+            index_name=settings.INDEX_NAME,
             embedding_model=embedding_model,
         )
         await TelemetryClient.send_event(Category.OPENSEARCH_INDEX, MessageId.ORB_OS_INDEX_CREATED)
     else:
         logger.info(
             "Index already exists, skipping creation",
-            index_name=INDEX_NAME,
+            index_name=settings.INDEX_NAME,
             embedding_model=embedding_model,
         )
         await TelemetryClient.send_event(Category.OPENSEARCH_INDEX, MessageId.ORB_OS_INDEX_EXISTS)
@@ -586,6 +587,7 @@ async def startup_tasks(services):
 
 
 async def initialize_services():
+    import config.settings as settings
     """Initialize all services and their dependencies"""
     await TelemetryClient.send_event(Category.SERVICE_INITIALIZATION, MessageId.ORB_SVC_INIT_START)
     # Generate JWT keys if they don't exist
@@ -626,7 +628,7 @@ async def initialize_services():
         patched_async_client=clients,  # Pass the clients object itself
         process_pool=process_pool,
         embed_model=get_embedding_model(),
-        index_name=INDEX_NAME,
+        index_name=settings.INDEX_NAME,
         task_service=task_service,
         session_manager=session_manager,
     )

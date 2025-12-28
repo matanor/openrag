@@ -202,6 +202,7 @@ async def update_settings(request, session_manager):
             "llm_model",
             "llm_provider",
             "system_prompt",
+            "index_name",
             "chunk_size",
             "chunk_overlap",
             "table_structure",
@@ -512,6 +513,29 @@ async def update_settings(request, session_manager):
                 await _update_langflow_docling_settings(current_config, flows_service)
             except Exception as e:
                 logger.error(f"Failed to update docling settings in flow: {str(e)}")
+
+        if "index_name" in body:
+            import config.settings as settings
+            settings.INDEX_NAME = body["index_name"]
+            # also update ?
+            # current_config.knowledge.index_name =
+            config_updated = True
+            #await TelemetryClient.send_event(
+            #    Category.SETTINGS_OPERATIONS,
+            #    MessageId.ORB_SETTINGS_UPDATED
+            #)
+
+            # Also update the ingest flow with the new index name
+            try:
+                flows_service = _get_flows_service()
+                await flows_service.update_ingest_flow_index_name(settings.INDEX_NAME)
+                logger.info(
+                    f"Successfully updated ingest flow index name to '{settings.INDEX_NAME}'."
+                )
+            except Exception as e:
+                logger.error(f"Failed to update ingest flow index name: {str(e)}")
+                # Don't fail the entire settings update if flow update fails
+                # The config will still be saved
 
         if "chunk_size" in body:
             current_config.knowledge.chunk_size = body["chunk_size"]
@@ -1422,12 +1446,12 @@ async def rollback_onboarding(request, session_manager, task_service):
                 {"error": "No onboarding configuration to rollback"}, status_code=400
             )
 
-        from config.settings import INDEX_NAME
-        if await clients.opensearch.indices.exists(index=INDEX_NAME):
+        import config.settings as settings
+        if await clients.opensearch.indices.exists(index=settings.INDEX_NAME):
             # DELETE /<index_name>
-            logger.info(f"Deleting index '{INDEX_NAME}'...")
-            resp = await clients.opensearch.indices.delete(index=INDEX_NAME)
-            logger.info(f"Deleted '{INDEX_NAME}': {resp}")
+            logger.info(f"Deleting index '{settings.INDEX_NAME}'...")
+            resp = await clients.opensearch.indices.delete(index=settings.INDEX_NAME)
+            logger.info(f"Deleted '{settings.INDEX_NAME}': {resp}")
 
         user = request.state.user
         jwt_token = session_manager.get_effective_jwt_token(user.user_id, request.state.jwt_token)
@@ -1474,12 +1498,12 @@ async def rollback_onboarding(request, session_manager, task_service):
                                     
                                     # Delete documents by filename
                                     from utils.opensearch_queries import build_filename_delete_body
-                                    from config.settings import INDEX_NAME
+                                    import config.settings as settings
                                     
                                     delete_query = build_filename_delete_body(filename)
                                     
                                     result = await opensearch_client.delete_by_query(
-                                        index=INDEX_NAME,
+                                        index=settings.INDEX_NAME,
                                         body=delete_query,
                                         conflicts="proceed"
                                     )
