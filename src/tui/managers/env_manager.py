@@ -55,6 +55,11 @@ class EnvConfig:
     aws_secret_access_key: str = ""
     langflow_public_url: str = ""
 
+    # Langfuse settings (optional)
+    langfuse_secret_key: str = ""
+    langfuse_public_key: str = ""
+    langfuse_host: str = ""
+
     # Langflow auth settings
     langflow_auto_login: str = "False"
     langflow_new_user_is_active: str = "False"
@@ -64,11 +69,17 @@ class EnvConfig:
     disable_ingest_with_langflow: str = "False"
     nudges_flow_id: str = "ebc01d31-1976-46ce-a385-b0240327226c"
 
-    # Document paths (comma-separated)
-    openrag_documents_paths: str = "./openrag-documents"
+    # Document paths (comma-separated) - use centralized location by default
+    openrag_documents_paths: str = "$HOME/.openrag/documents"
 
-    # OpenSearch data path
-    opensearch_data_path: str = "./opensearch-data"
+    # Volume mount paths - use centralized location by default
+    openrag_documents_path: str = "$HOME/.openrag/documents"  # Primary documents path for compose
+    openrag_keys_path: str = "$HOME/.openrag/keys"
+    openrag_flows_path: str = "$HOME/.openrag/flows"
+    openrag_config_path: str = "$HOME/.openrag/config"
+    openrag_data_path: str = "$HOME/.openrag/data"  # Backend data (conversations, tokens, etc.)
+    opensearch_data_path: str = "$HOME/.openrag/data/opensearch-data"
+    openrag_tui_config_path_legacy: str = "$HOME/.openrag/tui/config"
     
     # Container version (linked to TUI version)
     openrag_version: str = ""
@@ -81,7 +92,26 @@ class EnvManager:
     """Manages environment configuration for OpenRAG."""
 
     def __init__(self, env_file: Optional[Path] = None):
-        self.env_file = env_file or Path(".env")
+        if env_file:
+            self.env_file = env_file
+        else:
+            # Use centralized location for TUI .env file
+            from utils.paths import get_tui_env_file, get_legacy_paths
+            self.env_file = get_tui_env_file()
+            
+            # Check for legacy .env in current directory and migrate if needed
+            legacy_env = get_legacy_paths()["tui_env"]
+            if not self.env_file.exists() and legacy_env.exists():
+                try:
+                    import shutil
+                    self.env_file.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(legacy_env, self.env_file)
+                    logger.info(f"Migrated .env from {legacy_env} to {self.env_file}")
+
+
+                except Exception as e:
+                    logger.warning(f"Failed to migrate .env file: {e}")
+        
         self.config = EnvConfig()
 
     def generate_secure_password(self) -> str:
@@ -155,12 +185,20 @@ class EnvManager:
             "AWS_SECRET_ACCESS_KEY": "aws_secret_access_key",  # pragma: allowlist secret
             "LANGFLOW_PUBLIC_URL": "langflow_public_url",
             "OPENRAG_DOCUMENTS_PATHS": "openrag_documents_paths",
+            "OPENRAG_DOCUMENTS_PATH": "openrag_documents_path",
+            "OPENRAG_KEYS_PATH": "openrag_keys_path",
+            "OPENRAG_FLOWS_PATH": "openrag_flows_path",
+            "OPENRAG_CONFIG_PATH": "openrag_config_path",
+            "OPENRAG_DATA_PATH": "openrag_data_path",
             "OPENSEARCH_DATA_PATH": "opensearch_data_path",
             "LANGFLOW_AUTO_LOGIN": "langflow_auto_login",
             "LANGFLOW_NEW_USER_IS_ACTIVE": "langflow_new_user_is_active",
             "LANGFLOW_ENABLE_SUPERUSER_CLI": "langflow_enable_superuser_cli",
             "DISABLE_INGEST_WITH_LANGFLOW": "disable_ingest_with_langflow",
             "OPENRAG_VERSION": "openrag_version",
+            "LANGFUSE_SECRET_KEY": "langfuse_secret_key",  # pragma: allowlist secret
+            "LANGFUSE_PUBLIC_KEY": "langfuse_public_key",  # pragma: allowlist secret
+            "LANGFUSE_HOST": "langfuse_host",
         }
         
         loaded_from_file = False
@@ -348,11 +386,34 @@ class EnvManager:
                 f.write(f"LANGFLOW_URL_INGEST_FLOW_ID={self._quote_env_value(self.config.langflow_url_ingest_flow_id)}\n")
                 f.write(f"NUDGES_FLOW_ID={self._quote_env_value(self.config.nudges_flow_id)}\n")
                 f.write(f"OPENSEARCH_PASSWORD={self._quote_env_value(self.config.opensearch_password)}\n")
+
+                # Expand $HOME in paths before writing to .env
+                # This ensures paths work with all compose implementations (docker, podman)
+                from utils.paths import expand_path
                 f.write(
-                    f"OPENRAG_DOCUMENTS_PATHS={self._quote_env_value(self.config.openrag_documents_paths)}\n"
+                    f"OPENRAG_DOCUMENTS_PATHS={self._quote_env_value(expand_path(self.config.openrag_documents_paths))}\n"
+                )
+                f.write("\n")
+
+                # Volume mount paths for Docker Compose
+                f.write("# Volume mount paths for Docker Compose\n")
+                f.write(
+                    f"OPENRAG_DOCUMENTS_PATH={self._quote_env_value(expand_path(self.config.openrag_documents_path))}\n"
                 )
                 f.write(
-                    f"OPENSEARCH_DATA_PATH={self._quote_env_value(self.config.opensearch_data_path)}\n"
+                    f"OPENRAG_KEYS_PATH={self._quote_env_value(expand_path(self.config.openrag_keys_path))}\n"
+                )
+                f.write(
+                    f"OPENRAG_FLOWS_PATH={self._quote_env_value(expand_path(self.config.openrag_flows_path))}\n"
+                )
+                f.write(
+                    f"OPENRAG_CONFIG_PATH={self._quote_env_value(expand_path(self.config.openrag_config_path))}\n"
+                )
+                f.write(
+                    f"OPENRAG_DATA_PATH={self._quote_env_value(expand_path(self.config.openrag_data_path))}\n"
+                )
+                f.write(
+                    f"OPENSEARCH_DATA_PATH={self._quote_env_value(expand_path(self.config.opensearch_data_path))}\n"
                 )
                 # Set OPENRAG_VERSION to TUI version
                 if self.config.openrag_version:
@@ -451,6 +512,24 @@ class EnvManager:
                 if optional_written:
                     f.write("\n")
 
+                # Langfuse settings (optional)
+                langfuse_vars = [
+                    ("LANGFUSE_SECRET_KEY", self.config.langfuse_secret_key),
+                    ("LANGFUSE_PUBLIC_KEY", self.config.langfuse_public_key),
+                    ("LANGFUSE_HOST", self.config.langfuse_host),
+                ]
+
+                langfuse_written = False
+                for var_name, var_value in langfuse_vars:
+                    if var_value:
+                        if not langfuse_written:
+                            f.write("# Langfuse settings\n")
+                            langfuse_written = True
+                        f.write(f"{var_name}={self._quote_env_value(var_value)}\n")
+
+                if langfuse_written:
+                    f.write("\n")
+
             return True
 
         except Exception as e:
@@ -476,7 +555,7 @@ class EnvManager:
             (
                 "openrag_documents_paths",
                 "Documents Paths",
-                "./openrag-documents,/path/to/more/docs",
+                "~/.openrag/documents",
                 False,
             ),
         ]
@@ -601,12 +680,13 @@ class EnvManager:
 
     def generate_compose_volume_mounts(self) -> List[str]:
         """Generate Docker Compose volume mount strings from documents paths."""
-        is_valid, _, validated_paths = validate_documents_paths(
-            self.config.openrag_documents_paths
-        )
+        # Expand $HOME before validation
+        paths_str = self.config.openrag_documents_paths.replace("$HOME", str(Path.home()))
+        is_valid, error_msg, validated_paths = validate_documents_paths(paths_str)
 
         if not is_valid:
-            return ["./openrag-documents:/app/openrag-documents:Z"]  # fallback
+            logger.warning(f"Invalid documents paths: {error_msg}")
+            return []
 
         volume_mounts = []
         for i, path in enumerate(validated_paths):
