@@ -2,6 +2,9 @@ import json
 import platform
 import time
 from starlette.responses import JSONResponse
+
+from langchain_text_splitters import CharacterTextSplitter
+from openrag.flows.components.split_text import TableAwareTextSplitter, LineBasedTextSplitter
 from utils.container_utils import transform_localhost_url
 from utils.logging_config import get_logger
 from utils.telemetry import TelemetryClient, Category, MessageId
@@ -178,6 +181,46 @@ async def get_settings(request, session_manager):
             {"error": f"Failed to retrieve settings: {str(e)}"}, status_code=500
         )
 
+async def validate_enum_str(
+    body: dict,
+    field_name: str,
+    allowed_values: list[str],
+):
+    """
+    Validate that body[field_name], if present, is:
+      - a string,
+      - non-empty after stripping whitespace,
+      - and one of the allowed_values.
+
+    """
+    # If not provided, no validation needed
+    if field_name not in body:
+        return None
+
+    value = body[field_name]
+
+    # Must be a string
+    if not isinstance(value, str):
+        return JSONResponse(
+            {"error": f"{field_name} must be a string"},
+            status_code=400,
+        )
+
+    # Must be non-empty after trimming
+    trimmed = value.strip()
+    if not trimmed:
+        return JSONResponse(
+            {"error": f"{field_name} must be a non-empty string"},
+            status_code=400,
+        )
+
+    # Must be among allowed values
+    if trimmed not in allowed_values:
+        allowed_str = ", ".join(allowed_values)
+        return JSONResponse(
+            {"error": f"{field_name} must be one of: {allowed_str}"},
+            status_code=400,
+        )
 
 async def update_settings(request, session_manager):
     """Update application settings"""
@@ -205,6 +248,7 @@ async def update_settings(request, session_manager):
             "index_name",
             "chunk_size",
             "chunk_overlap",
+            "splitter_type",
             "table_structure",
             "ocr",
             "picture_descriptions",
@@ -269,36 +313,13 @@ async def update_settings(request, session_manager):
                     status_code=400,
                 )
 
-        if "llm_provider" in body:
-            if (
-                not isinstance(body["llm_provider"], str)
-                or not body["llm_provider"].strip()
-            ):
-                return JSONResponse(
-                    {"error": "llm_provider must be a non-empty string"},
-                    status_code=400,
-                )
-            if body["llm_provider"] not in ["openai", "anthropic", "watsonx", "ollama"]:
-                return JSONResponse(
-                    {"error": "llm_provider must be one of: openai, anthropic, watsonx, ollama"},
-                    status_code=400,
-                )
+        validate_enum_str(body, field_name="splitter_type", allowed_values=[
+            CharacterTextSplitter.__name__, LineBasedTextSplitter.__name__, TableAwareTextSplitter.__name__
+        ])
 
-        if "embedding_provider" in body:
-            if (
-                not isinstance(body["embedding_provider"], str)
-                or not body["embedding_provider"].strip()
-            ):
-                return JSONResponse(
-                    {"error": "embedding_provider must be a non-empty string"},
-                    status_code=400,
-                )
-            # Anthropic doesn't have embeddings
-            if body["embedding_provider"] not in ["openai", "watsonx", "ollama"]:
-                return JSONResponse(
-                    {"error": "embedding_provider must be one of: openai, watsonx, ollama"},
-                    status_code=400,
-                )
+        validate_enum_str(body, field_name="llm_provider", allowed_values=["openai", "anthropic", "watsonx", "ollama"])
+
+        validate_enum_str(body, field_name="embedding_provider", allowed_values=["openai", "watsonx", "ollama"])
 
         # Validate provider-specific fields
         for key in ["openai_api_key", "anthropic_api_key", "watsonx_api_key"]:
@@ -534,6 +555,27 @@ async def update_settings(request, session_manager):
                 )
             except Exception as e:
                 logger.error(f"Failed to update ingest flow index name: {str(e)}")
+                # Don't fail the entire settings update if flow update fails
+                # The config will still be saved
+
+        if "splitter_type" in body:
+            new_splitter_type = body["splitter_type"]
+            current_config.knowledge.splitter_type = body["splitter_type"]
+            config_updated = True
+            await TelemetryClient.send_event(
+                Category.SETTINGS_OPERATIONS,
+                MessageId.ORB_SETTINGS_CHUNK_UPDATED
+            )
+
+            # Also update the ingest flow with the new splitter type
+            try:
+                flows_service = _get_flows_service()
+                await flows_service.update_ingest_flow_splitter_type(new_splitter_type)
+                logger.info(
+                    f"Successfully updated ingest flow splitter type to {new_splitter_type}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to update ingest flow splitter type: {str(e)}")
                 # Don't fail the entire settings update if flow update fails
                 # The config will still be saved
 

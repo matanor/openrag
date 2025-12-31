@@ -964,6 +964,17 @@ class FlowsService:
             node_display_name="Split Text",
         )
 
+    async def update_ingest_flow_splitter_type(self, splitter_type: str):
+        """Helper function to update splitter type in the ingest flow"""
+        if not LANGFLOW_INGEST_FLOW_ID:
+            raise ValueError("LANGFLOW_INGEST_FLOW_ID is not configured")
+        await self._update_flow_field(
+            LANGFLOW_INGEST_FLOW_ID,
+            "splitter_type",
+            splitter_type,
+            node_display_name="Split Text",
+        )
+
     async def update_ingest_flow_embedding_model(self, embedding_model: str, provider: str):
         """Helper function to update embedding model in the ingest flow"""
         if not LANGFLOW_INGEST_FLOW_ID:

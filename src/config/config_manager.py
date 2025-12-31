@@ -5,6 +5,8 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional
 from dataclasses import dataclass, asdict
+
+from langchain_text_splitters import CharacterTextSplitter
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -71,6 +73,7 @@ class KnowledgeConfig:
     embedding_provider: str = "openai"  # Which provider to use for embeddings
     chunk_size: int = 1000
     chunk_overlap: int = 200
+    splitter_type: str = CharacterTextSplitter.__name__
     table_structure: bool = True
     ocr: bool = False
     picture_descriptions: bool = False
