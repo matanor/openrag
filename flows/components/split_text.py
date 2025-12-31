@@ -184,13 +184,22 @@ class LineBasedTextSplitter:
         prefix: str = "",
     ):
         self._chunk_size = chunk_size
+        self.use_tiktoken = False
+        if model_id in ["text-embedding-3-small", "text-embedding-3-large"]:
+            self.use_tiktoken = True
+        print(f"Initializing tokenizer for model '{model_id}', use_tiktoken = {self.use_tiktoken}.")
 
-        from transformers import AutoTokenizer
-        self._tokenizer = AutoTokenizer.from_pretrained(
-            pretrained_model_name_or_path=model_id,
-        )
+        if self.use_tiktoken:
+            import tiktoken
+            # The tokenizer for text-embedding-3-small
+            self._tokenizer = tiktoken.get_encoding("cl100k_base")
+        else:
+            from transformers import AutoTokenizer
+            self._tokenizer = AutoTokenizer.from_pretrained(
+                pretrained_model_name_or_path=model_id,
+            )
 
-        prefix_len = len(self._tokenizer.encode(prefix, add_special_tokens=False))
+        prefix_len = len(self.tokenize(prefix))
         if prefix_len >= self._chunk_size:
             raise RuntimeError(
                 f"Chunks prefix: {prefix} is too long for chunk size {self._chunk_size}"
@@ -198,6 +207,15 @@ class LineBasedTextSplitter:
         else:
             self._prefix = prefix
             self._prefixLen = prefix_len
+
+    def tokenize(self, text: str) -> list[int]:
+        if self.use_tiktoken:
+            return self._tokenizer.encode(text)
+        else:
+            return self._tokenizer.encode(text, add_special_tokens=False)
+
+    def decode_tokens(self, tokens: list[int]):
+        return self._tokenizer.decode(tokens)
 
     def split_documents(self, documents: Iterable[Document]) -> list[Document]:
         """Given Documents, chunk the text to smaller pieces and return them as list of Documents"""
@@ -216,10 +234,10 @@ class LineBasedTextSplitter:
         current_len = self._prefixLen
         first_character_index = document_metadata.get("start_index", 0)
 
-        new_line_token_count =  len(self._tokenizer.encode("\n", add_special_tokens=False))
+        new_line_token_count =  len(self.tokenize("\n"))
         lines = document_text.split("\n")
         for line in lines:
-            line_tokens = self._tokenizer.encode(line, add_special_tokens=False)
+            line_tokens = self.tokenize(line)
 
             while (
                 len(line_tokens) > self._chunk_size - current_len
@@ -236,7 +254,7 @@ class LineBasedTextSplitter:
                     if current:
                         current += "\n"
                         current_len += new_line_token_count
-                    current += self._tokenizer.decode(
+                    current += self.decode_tokens(
                         line_tokens[:num_available_tokens_in_chunk]
                     )
                     current_len += num_available_tokens_in_chunk
@@ -260,7 +278,7 @@ class LineBasedTextSplitter:
                 if current:
                     current += "\n"
                     current_len += new_line_token_count
-                current += self._tokenizer.decode(line_tokens)
+                current += self.decode_tokens(line_tokens)
                 current_len += len(line_tokens)
 
         # final chunk
