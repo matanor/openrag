@@ -183,7 +183,7 @@ async def validate_enum_str(
     body: dict,
     field_name: str,
     allowed_values: list[str],
-):
+) -> JSONResponse | None:
     """
     Validate that body[field_name], if present, is:
       - a string,
@@ -219,6 +219,8 @@ async def validate_enum_str(
             {"error": f"{field_name} must be one of: {allowed_str}"},
             status_code=400,
         )
+
+    return None
 
 async def update_settings(request, session_manager):
     """Update application settings"""
@@ -311,15 +313,21 @@ async def update_settings(request, session_manager):
                     status_code=400,
                 )
 
-        await validate_enum_str(body, field_name="splitter_type",
+        response = await validate_enum_str(body, field_name="splitter_type",
             allowed_values=[
                 "CharacterTextSplitter", "LineBasedTextSplitter", "TableAwareTextSplitter"
             ]
         )
+        if response:
+            return response
 
-        await validate_enum_str(body, field_name="llm_provider", allowed_values=["openai", "anthropic", "watsonx", "ollama"])
+        response = await validate_enum_str(body, field_name="llm_provider", allowed_values=["openai", "anthropic", "watsonx", "ollama"])
+        if response:
+            return response
 
-        await validate_enum_str(body, field_name="embedding_provider", allowed_values=["openai", "watsonx", "ollama"])
+        response = await validate_enum_str(body, field_name="embedding_provider", allowed_values=["openai", "watsonx", "ollama"])
+        if response:
+            return response
 
         # Validate provider-specific fields
         for key in ["openai_api_key", "anthropic_api_key", "watsonx_api_key"]:
@@ -560,7 +568,7 @@ async def update_settings(request, session_manager):
 
         if "splitter_type" in body:
             new_splitter_type = body["splitter_type"]
-            current_config.knowledge.splitter_type = body["splitter_type"]
+            current_config.knowledge.splitter_type = new_splitter_type
             config_updated = True
             await TelemetryClient.send_event(
                 Category.SETTINGS_OPERATIONS,
