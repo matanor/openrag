@@ -8,9 +8,11 @@ code_file = flows_dir + "/components/split_text.py"
 display_name = "Split Text"
 
 
-def main():
-    read_component()
-    # write_component()
+def main(read: bool):
+    if read:
+        read_component()
+    else:
+        write_component()
 
 def read_component():
     metadata_module = None # "mypkg.flow_meta"  # OPTIONAL
@@ -47,4 +49,4 @@ def write_component():
 
 
 if __name__ == "__main__":
-    main()
+    main(read=False)
