@@ -3,8 +3,6 @@ import platform
 import time
 from starlette.responses import JSONResponse
 
-from langchain_text_splitters import CharacterTextSplitter
-from openrag.flows.components.split_text import TableAwareTextSplitter, LineBasedTextSplitter
 from utils.container_utils import transform_localhost_url
 from utils.logging_config import get_logger
 from utils.telemetry import TelemetryClient, Category, MessageId
@@ -313,13 +311,15 @@ async def update_settings(request, session_manager):
                     status_code=400,
                 )
 
-        validate_enum_str(body, field_name="splitter_type", allowed_values=[
-            CharacterTextSplitter.__name__, LineBasedTextSplitter.__name__, TableAwareTextSplitter.__name__
-        ])
+        await validate_enum_str(body, field_name="splitter_type",
+            allowed_values=[
+                "CharacterTextSplitter", "LineBasedTextSplitter", "TableAwareTextSplitter"
+            ]
+        )
 
-        validate_enum_str(body, field_name="llm_provider", allowed_values=["openai", "anthropic", "watsonx", "ollama"])
+        await validate_enum_str(body, field_name="llm_provider", allowed_values=["openai", "anthropic", "watsonx", "ollama"])
 
-        validate_enum_str(body, field_name="embedding_provider", allowed_values=["openai", "watsonx", "ollama"])
+        await validate_enum_str(body, field_name="embedding_provider", allowed_values=["openai", "watsonx", "ollama"])
 
         # Validate provider-specific fields
         for key in ["openai_api_key", "anthropic_api_key", "watsonx_api_key"]:
