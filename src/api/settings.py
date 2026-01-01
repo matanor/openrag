@@ -486,6 +486,19 @@ async def update_settings(request, session_manager):
                 Category.SETTINGS_OPERATIONS, 
                 MessageId.ORB_SETTINGS_EMBED_MODEL
             )
+
+            # Also update the ingest flow with a new model id
+            try:
+                flows_service = _get_flows_service()
+                await flows_service.update_ingest_flow_model_id_in_text_splitter(model_id=new_embedding_model)
+                logger.info(
+                    f"Successfully updated ingest flow model id in text splitter to {new_embedding_model}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to update ingest flow model id in text splitter: {str(e)}")
+                # Don't fail the entire settings update if flow update fails
+                # The config will still be saved
+
             logger.info(f"Embedding model changed from {old_model} to {new_embedding_model}")
 
         if "embedding_provider" in body:
