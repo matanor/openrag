@@ -320,19 +320,11 @@ class TableAwareTextSplitter:
         chunks = []
         for segment in segments:
             prefix = self.get_prefix(segment)
-            try:
-                line_splitter = LineBasedTextSplitter(
-                    chunk_size=self.chunk_size,
-                    model_id=self.model_id,
-                    prefix=prefix
-                )
-            except RuntimeError as e:
-                print(f"Cannot create a line splitter with prefix '{prefix}' for segment:\n{segment}\n***\nError: {e}")
-                print(f"Skipping the prefix ..")
-                line_splitter = LineBasedTextSplitter(
-                    chunk_size=self.chunk_size,
-                    model_id=self.model_id,
-                )
+            line_splitter = LineBasedTextSplitter(
+                chunk_size=self.chunk_size,
+                model_id=self.model_id,
+                prefix=prefix
+            )
 
             chunks.extend(line_splitter.split_documents([segment]))
 
