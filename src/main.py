@@ -197,12 +197,13 @@ async def init_index(delete_existing: bool = False):
         endpoint=getattr(embedding_provider_config, "endpoint", None)
     )
 
-    index_exists = clients.opensearch.indices.exists(index=settings.INDEX_NAME)
+    index_exists = await clients.opensearch.indices.exists(index=settings.INDEX_NAME)
     logger.info(
         "Initializing OpenSearch index ..",
         index_name=settings.INDEX_NAME,
         embedding_model=embedding_model,
         delete_existing=delete_existing,
+        index_exists=index_exists,
     )
     if index_exists and delete_existing:
         # DELETE /<index_name>
