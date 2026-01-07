@@ -210,6 +210,7 @@ async def init_index(delete_existing: bool = False):
         logger.info(f"Deleting index '{settings.INDEX_NAME}'...")
         resp = await clients.opensearch.indices.delete(index=settings.INDEX_NAME)
         logger.info(f"Deleted '{settings.INDEX_NAME}': {resp}")
+        index_exists = False
 
     # Create documents index
     if not index_exists:
