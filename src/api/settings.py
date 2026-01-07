@@ -773,6 +773,7 @@ async def onboarding(request, flows_service, session_manager=None):
             "llm_model",
             "embedding_provider",
             "embedding_model",
+            "delete_existing_index",
             "sample_data",
             # Provider-specific fields
             "openai_api_key",
@@ -786,9 +787,11 @@ async def onboarding(request, flows_service, session_manager=None):
         # Check for invalid fields
         invalid_fields = set(body.keys()) - allowed_fields
         if invalid_fields:
+            error_message = f"Invalid fields: {', '.join(invalid_fields)}. Allowed fields: {', '.join(allowed_fields)}"
+            logger.error(error_message)
             return JSONResponse(
                 {
-                    "error": f"Invalid fields: {', '.join(invalid_fields)}. Allowed fields: {', '.join(allowed_fields)}"
+                    "error": error_message
                 },
                 status_code=400,
             )
@@ -1062,10 +1065,12 @@ async def onboarding(request, flows_service, session_manager=None):
                 # Import here to avoid circular imports
                 from main import init_index
 
+                delete_existing_index = body.get("delete_existing_index", False)
+                delete_existing_index = bool(delete_existing_index)
                 logger.info(
-                    "Initializing OpenSearch index after onboarding configuration"
+                    f"Initializing OpenSearch index after onboarding configuration (delete_existing_index={delete_existing_index})",
                 )
-                await init_index()
+                await init_index(delete_existing=delete_existing_index)
                 logger.info("OpenSearch index initialization completed successfully")
             except Exception as e:
                 if isinstance(e, ValueError):
