@@ -568,12 +568,12 @@ async def update_settings(request, session_manager):
             #    MessageId.ORB_SETTINGS_UPDATED
             #)
 
-            # Also update the ingest flow with the new index name
+            # Also update the flows with the new index name
             try:
                 flows_service = _get_flows_service()
-                await flows_service.update_ingest_flow_index_name(settings.INDEX_NAME)
+                await flows_service.update_flows_index_name(settings.INDEX_NAME)
                 logger.info(
-                    f"Successfully updated ingest flow index name to '{settings.INDEX_NAME}'."
+                    f"Successfully updated flows index name to '{settings.INDEX_NAME}'."
                 )
             except Exception as e:
                 logger.error(f"Failed to update ingest flow index name: {str(e)}")
