@@ -975,6 +975,17 @@ class FlowsService:
             node_display_name="Split Text",
         )
 
+    async def update_ingest_flow_use_document_title(self, use_document_title: bool):
+        """Helper function to update splitter type in the ingest flow"""
+        if not LANGFLOW_INGEST_FLOW_ID:
+            raise ValueError("LANGFLOW_INGEST_FLOW_ID is not configured")
+        await self._update_flow_field(
+            LANGFLOW_INGEST_FLOW_ID,
+            "use_document_title",
+            str(use_document_title),
+            node_display_name="Split Text",
+        )
+
     async def update_ingest_flow_model_id_in_text_splitter(self, model_id: str):
         """Helper function to update splitter type in the ingest flow"""
         if not LANGFLOW_INGEST_FLOW_ID:

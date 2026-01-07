@@ -249,6 +249,7 @@ async def update_settings(request, session_manager):
             "chunk_size",
             "chunk_overlap",
             "splitter_type",
+            "use_document_title",
             "table_structure",
             "ocr",
             "picture_descriptions",
@@ -597,6 +598,27 @@ async def update_settings(request, session_manager):
                 )
             except Exception as e:
                 logger.error(f"Failed to update ingest flow splitter type: {str(e)}")
+                # Don't fail the entire settings update if flow update fails
+                # The config will still be saved
+
+        if "use_document_title" in body:
+            new_use_document_title = body["use_document_title"]
+            current_config.knowledge.use_document_title = new_use_document_title
+            config_updated = True
+            await TelemetryClient.send_event(
+                Category.SETTINGS_OPERATIONS,
+                MessageId.ORB_SETTINGS_CHUNK_UPDATED
+            )
+
+            # Also update the ingest flow with the new splitter type
+            try:
+                flows_service = _get_flows_service()
+                await flows_service.update_ingest_flow_use_document_title(new_use_document_title)
+                logger.info(
+                    f"Successfully updated ingest flow use_document_title to {new_use_document_title}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to update ingest flow use_document_title do: {str(e)}")
                 # Don't fail the entire settings update if flow update fails
                 # The config will still be saved
 
