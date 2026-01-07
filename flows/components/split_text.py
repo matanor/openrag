@@ -110,6 +110,17 @@ class SplitTextComponent(Component):
             return "\t"
         return separator
 
+    @staticmethod
+    def to_bool(val):
+        if isinstance(val, str):
+            if val.lower() == "false":
+                return False
+            elif val.lower() == "true":
+                return True
+        elif isinstance(val, bool):
+            return val
+        raise RuntimeError(f"Cannot convert value {val} to a boolean value. Expected 'True' or 'False'.")
+
     def split_text_base(self):
         separator = self._fix_separator(self.separator)
         separator = unescape_string(separator)
@@ -149,14 +160,7 @@ class SplitTextComponent(Component):
         try:
             if self.splitter_type == "CharacterTextSplitter":
                 # Convert string 'False'/'True' to boolean
-                keep_sep = self.keep_separator
-                if isinstance(keep_sep, str):
-                    if keep_sep.lower() == "false":
-                        keep_sep = False
-                    elif keep_sep.lower() == "true":
-                        keep_sep = True
-                    # 'start' and 'end' are kept as strings
-
+                keep_sep = self.to_bool(self.keep_separator)
                 logger.debug("SPLIT: Creating a CharacterTextSplitter..")
                 splitter = CharacterTextSplitter(
                     chunk_overlap=self.chunk_overlap,
@@ -165,11 +169,11 @@ class SplitTextComponent(Component):
                     keep_separator=keep_sep,
                 )
             elif self.splitter_type == "LineBasedTextSplitter":
-                logger.debug(f"SPLIT: Creating a LineBasedTextSplitter with chunk_size={self.chunk_size} and model_id '{self.model_id}'.")
+                use_document_title = self.to_bool(self.use_document_title)
                 splitter = LineBasedTextSplitter(
                     chunk_size=self.chunk_size,
                     model_id=self.model_id,
-                    use_document_title=self.use_document_title,
+                    use_document_title=use_document_title,
                 )
             elif self.splitter_type == "TableAwareTextSplitter":
                 logger.debug(f"SPLIT: Creating a TableAwareTextSplitter with chunk_size={self.chunk_size} and model_id '{self.model_id}'.")
@@ -199,8 +203,7 @@ class LineBasedTextSplitter:
         self.use_tiktoken = False
         if model_id in ["text-embedding-3-small", "text-embedding-3-large"]:
             self.use_tiktoken = True
-        logger.debug(f"SPLIT: Initializing LineBasedTextSplitter, for model '{model_id}', use_tiktoken = {self.use_tiktoken}, use_document_title={use_document_title}.")
-
+        logger.debug(f"SPLIT: Initializing LineBasedTextSplitter, chunk_size = {chunk_size}, model_id = '{model_id}', use_tiktoken = {self.use_tiktoken}, use_document_title={use_document_title}.")
         if self.use_tiktoken:
             import tiktoken
             # The tokenizer for text-embedding-3-small, text-embedding-3-large
@@ -248,8 +251,7 @@ class LineBasedTextSplitter:
         document_metadata = document.metadata
         chunks = []
         chunk_seq_num = 0
-        current = self._prefix
-        current_len = self._prefix_len
+
         first_character_index = document_metadata.get("start_index", 0)
         if self.use_document_title:
             file_name = document_metadata.get("filename", "unknown-file-name")
@@ -257,6 +259,9 @@ class LineBasedTextSplitter:
             document_title = get_title(file_name)
             logger.debug(f"SPLIT: Found title '{document_title}'..")
             self.set_prefix(document_title)
+
+        current = self._prefix
+        current_len = self._prefix_len
 
         new_line_token_count =  len(self.tokenize("\n"))
         lines = document_text.split("\n")
