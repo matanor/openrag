@@ -10,7 +10,7 @@
 <script>!function(){function e(){if(void 0!==window.truste&&window.truste.cma){var e=window.truste.cma.callApi("getConsent",window.location.href)||{},n=1===e[2],t=1===e[3];gtag("consent","update",{ad_storage:n?"granted":"denied",ad_user_data:n?"granted":"denied",ad_personalization:n?"granted":"denied",analytics_storage:t?"granted":"denied"})}}window.addEventListener&&(window.addEventListener("cm_data_subject_consent_changed",e),window.addEventListener("cm_consent_preferences_set",e)),"complete"===document.readyState?e():window.addEventListener("load",e)}()</script>
 <script>window._ibmAnalytics={settings:{name:"DataStax",tealiumProfileName:"ibm-subsidiary"},trustarc:{privacyPolicyLink:"https://ibm.com/privacy"}},window.digitalData={page:{pageInfo:{ibm:{siteId:"IBM_DataStax"}},category:{primaryCategory:"PC230"}}}</script>
 <script src="//1.www.s81c.com/common/stats/ibm-common.js" async="true"></script><link rel="stylesheet" href="/assets/css/styles.29e42e49.css">
-<script src="/assets/js/runtime~main.a09b72d8.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.a88dc6f2.js" defer="defer"></script>
 <script src="/assets/js/main.e1ba3126.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -78,21 +78,19 @@ These documents are ingested automatically during the <a class="" href="/install
 It is recommended that you keep these documents, and use <a class="" href="/knowledge-filters">filters</a> to separate them from your other knowledge.
 An <strong>OpenRAG Docs</strong> filter is created automatically for these documents.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="auth">OpenSearch authentication and document access<a href="#auth" class="hash-link" aria-label="Direct link to OpenSearch authentication and document access" title="Direct link to OpenSearch authentication and document access" translate="no">​</a></h2>
-<p>When you <a class="" href="/install-options">install OpenRAG</a>, you provide the initial configuration values for your OpenRAG services, including authentication credentials for OpenSearch and OAuth connectors.
-This configuration determines how OpenRAG authenticates with your deployment&#x27;s OpenSearch instance, and it controls user access to documents in your knowledge base:</p>
+<p>When you <a class="" href="/install-options">install OpenRAG</a>, you provide the initial configuration values for your OpenRAG services, including authentication credentials for OpenSearch and OAuth connectors.</p>
+<div class="theme-admonition theme-admonition-warning admonition_xJq3 alert alert--warning"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.893 1.5c-.183-.31-.52-.5-.887-.5s-.703.19-.886.5L.138 13.499a.98.98 0 0 0 0 1.001c.193.31.53.501.886.501h13.964c.367 0 .704-.19.877-.5a1.03 1.03 0 0 0 .01-1.002L8.893 1.5zm.133 11.497H6.987v-2.003h2.039v2.003zm0-3.004H6.987V5.987h2.039v4.006z"></path></svg></span>warning</div><div class="admonitionContent_BuS1"><p>Google is the only supported OAuth provider for OpenRAG.</p><p>Other <a class="" href="/reference/configuration#oauth-and-cloud-storage-connector-settings">OAuth credentials</a> are used only to authorize cloud storage connectors.</p></div></div>
+<p>The presence of Google OAuth credentials determines how OpenRAG authenticates with your deployment&#x27;s OpenSearch instance, and how it controls user access to documents in your knowledge base:</p>
 <ul>
 <li class="">
-<p><strong>No-auth mode</strong>: If you select <strong>Basic Setup</strong> in the <a class="" href="/tui">TUI</a>, or your <a class="" href="/reference/configuration">OpenRAG <code>.env</code> file</a> doesn&#x27;t include OAuth credentials, then the OpenRAG OpenSearch instance runs in no-auth mode.</p>
-<p>This mode uses one anonymous JWT token for OpenSearch authentication.
-There is no differentiation between users; all users that access your OpenRAG instance can access all documents uploaded to your knowledge base.</p>
+<p><strong>No-auth mode</strong>: If you don&#x27;t provide Google OAuth credentials, then the OpenRAG OpenSearch instance runs in no-auth mode. This mode uses one anonymous JWT token for OpenSearch authentication. There is no differentiation between users; all users that access your OpenRAG instance can access all documents uploaded to your knowledge base.</p>
 </li>
 <li class="">
-<p><strong>OAuth mode</strong>: If you select <strong>Advanced Setup</strong> in the <a class="" href="/tui">TUI</a>, or your <a class="" href="/reference/configuration">OpenRAG <code>.env</code> file</a> includes OAuth credentials, then the OpenRAG OpenSearch instance runs in OAuth mode.</p>
-<p>This mode uses a unique JWT token for each OpenRAG user, and each document is tagged with user ownership.
-Documents are filtered by user owner; users see only the documents that they uploaded or have access to through their cloud storage accounts.</p>
-<p>To enable OAuth mode after initial setup, see <a class="" href="/ingestion#oauth-ingestion">Ingest files with OAuth connectors</a>.</p>
+<p><strong>OAuth mode</strong>: If you provide Google OAuth credentials, then the OpenRAG OpenSearch instance runs in OAuth mode. This mode uses a unique JWT token for each OpenRAG user, and each document is tagged with user ownership. Documents are filtered by user owner; users see only the documents that they uploaded or have access to through their cloud storage accounts.</p>
 </li>
 </ul>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>tip</div><div class="admonitionContent_BuS1"><p>To enable OAuth mode after initial setup, you must <a class="" href="/ingestion#oauth-ingestion">configure the Google Drive cloud storage connector for document ingestion</a>.
+This is because OpenRAG uses Google OAuth credentials for both OAuth mode <em>and</em> the Google Drive cloud storage connector.</p></div></div>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="opensearch-indexes">OpenSearch indexes<a href="#opensearch-indexes" class="hash-link" aria-label="Direct link to OpenSearch indexes" title="Direct link to OpenSearch indexes" translate="no">​</a></h2>
 <p>An <a href="https://docs.opensearch.org/latest/getting-started/intro/#index" target="_blank" rel="noopener noreferrer" class="">OpenSearch index</a> is a collection of documents in an OpenSearch database.</p>
 <p>By default, all documents you upload to your OpenRAG knowledge base are stored in an index named <code>documents</code>.</p>

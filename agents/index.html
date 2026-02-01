@@ -10,7 +10,7 @@
 <script>!function(){function e(){if(void 0!==window.truste&&window.truste.cma){var e=window.truste.cma.callApi("getConsent",window.location.href)||{},n=1===e[2],t=1===e[3];gtag("consent","update",{ad_storage:n?"granted":"denied",ad_user_data:n?"granted":"denied",ad_personalization:n?"granted":"denied",analytics_storage:t?"granted":"denied"})}}window.addEventListener&&(window.addEventListener("cm_data_subject_consent_changed",e),window.addEventListener("cm_consent_preferences_set",e)),"complete"===document.readyState?e():window.addEventListener("load",e)}()</script>
 <script>window._ibmAnalytics={settings:{name:"DataStax",tealiumProfileName:"ibm-subsidiary"},trustarc:{privacyPolicyLink:"https://ibm.com/privacy"}},window.digitalData={page:{pageInfo:{ibm:{siteId:"IBM_DataStax"}},category:{primaryCategory:"PC230"}}}</script>
 <script src="//1.www.s81c.com/common/stats/ibm-common.js" async="true"></script><link rel="stylesheet" href="/assets/css/styles.29e42e49.css">
-<script src="/assets/js/runtime~main.a09b72d8.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.a88dc6f2.js" defer="defer"></script>
 <script src="/assets/js/main.e1ba3126.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -29,9 +29,10 @@ In a flow, the individual workflow steps are represented by <a href="https://doc
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="inspect-and-modify-flows">Inspect and modify flows<a href="#inspect-and-modify-flows" class="hash-link" aria-label="Direct link to Inspect and modify flows" title="Direct link to Inspect and modify flows" translate="no">​</a></h2>
 <p>All OpenRAG flows are designed to be modular, performant, and provider-agnostic.</p>
 <p>To view and modify a flow in OpenRAG, click <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings2 lucide-settings-2" aria-hidden="true"><path d="M14 17H5"></path><path d="M19 7h-9"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg> <strong>Settings</strong>.
-From here, you can manage OAuth connectors, model providers, and common parameters for the <strong>Agent</strong> and <strong>Knowledge Ingestion</strong> flows.</p>
+From here, you can manage cloud storage connectors, model providers, and common parameters for the <strong>Agent</strong> and <strong>Knowledge Ingestion</strong> flows.</p>
 <p>To further explore and edit flows, click <strong>Edit in Langflow</strong> to launch the embedded <a href="https://docs.langflow.org/concepts-overview" target="_blank" rel="noopener noreferrer" class="">Langflow visual editor</a> where you can fully <a href="https://docs.langflow.org/concepts-flows" target="_blank" rel="noopener noreferrer" class="">customize the flow</a> to suit your use case.</p>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>tip</div><div class="admonitionContent_BuS1"><p>After you click <strong>Edit in Langflow</strong>, you can access and edit all of OpenRAG&#x27;s built-in flows from the Langflow editor&#x27;s <a href="https://docs.langflow.org/concepts-flows#projects" target="_blank" rel="noopener noreferrer" class=""><strong>Projects</strong> page</a>.</p><p>If you edit any flows other than the <strong>Agent</strong> or <strong>Knowledge Ingestion</strong> flows, it is recommended that you <a href="https://docs.langflow.org/concepts-flows-import" target="_blank" rel="noopener noreferrer" class="">export the flows</a> before editing so you can revert them to their original state if needed.</p></div></div>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>tip</div><div class="admonitionContent_BuS1"><p>After you click <strong>Edit in Langflow</strong>, you can access and edit all of OpenRAG&#x27;s built-in flows from the Langflow editor&#x27;s <a href="https://docs.langflow.org/concepts-flows#projects" target="_blank" rel="noopener noreferrer" class=""><strong>Projects</strong> page</a>.
+You can also create your own flows.</p><p>To edit any flow, you must first <a href="https://docs.langflow.org/concepts-flows#lock-a-flow" target="_blank" rel="noopener noreferrer" class="">unlock the flow</a>.</p><p>If you edit any flows other than the <strong>Agent</strong> or <strong>Knowledge Ingestion</strong> flows, it is recommended that you <a href="https://docs.langflow.org/concepts-flows-import" target="_blank" rel="noopener noreferrer" class="">export the flows</a> before editing so you can revert them to their original state if needed.</p></div></div>
 <p>For example, the following steps explain how to edit the built-in <strong>Agent</strong> flow, which is the <strong>OpenRAG OpenSearch Agent</strong> flow used for the OpenRAG <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square" aria-hidden="true"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"></path></svg> <strong>Chat</strong>:</p>
 <ol>
 <li class="">
@@ -43,14 +44,29 @@ Language model changes are saved automatically.
 To apply new instructions, click <strong>Save Agent Instructions</strong>.</p>
 </li>
 <li class="">
-<p>To edit all flow settings and components with full customization capabilities, click <strong>Edit in Langflow</strong> to launch the Langflow visual editor in a new browser tab.</p>
+<p>To edit all flow settings and components with full customization capabilities, edit the flow in the Langflow visual editor:</p>
+<ol>
+<li class="">
+<p>Click <strong>Edit in Langflow</strong> to launch the Langflow visual editor in a new browser tab.</p>
+</li>
+<li class="">
 <p>If prompted to acknowledge that you are entering Langflow, click <strong>Proceed</strong>.</p>
+</li>
+<li class="">
 <p>If Langflow requests login information, enter the <code>LANGFLOW_SUPERUSER</code> and <code>LANGFLOW_SUPERUSER_PASSWORD</code> from your <a class="" href="/reference/configuration">OpenRAG <code>.env</code> file</a>.</p>
+</li>
+<li class="">
+<p>In the Langflow header, click <strong>Starter Project</strong> to go to the <a href="https://docs.langflow.org/concepts-flows#projects" target="_blank" rel="noopener noreferrer" class="">Langflow <strong>Projects</strong> page</a>, and then <a href="https://docs.langflow.org/concepts-flows#lock-a-flow" target="_blank" rel="noopener noreferrer" class="">unlock the flow</a>.</p>
+</li>
+<li class="">
+<p>On the <strong>Projects</strong> page, click the <strong>OpenRAG OpenSearch Agent</strong> flow to open the visual editor with the flow unlocked.</p>
 <p><img decoding="async" loading="lazy" alt="OpenRAG OpenSearch Agent flow" src="/assets/images/opensearch-agent-flow-f3b279e02425cd043002eb7749067108.png" width="4084" height="2176" class="img_ev3q"></p>
 </li>
 <li class="">
-<p>Modify the flow as desired, and then press <kbd>Command</kbd>+<kbd>S</kbd> (<kbd>Ctrl</kbd>+<kbd>S</kbd>) to save your changes.</p>
-<p>You can close the Langflow browser tab, or leave it open if you want to continue experimenting with the flow editor.</p>
+<p>Modify the flow as desired, and then press <kbd>Command</kbd>+<kbd>S</kbd> (<kbd>Ctrl</kbd>+<kbd>S</kbd>) to save your changes.
+Then, you can close the Langflow browser tab, or leave it open if you want to continue experimenting with the flow editor.</p>
+</li>
+</ol>
 </li>
 <li class="">
 <p>After you modify any <strong>Agent</strong> flow settings, go to the OpenRAG <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square" aria-hidden="true"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"></path></svg> <strong>Chat</strong>, and then click <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg> <strong>Start new conversation</strong> in the <strong>Conversations</strong> list.

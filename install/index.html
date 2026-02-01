@@ -10,7 +10,7 @@
 <script>!function(){function e(){if(void 0!==window.truste&&window.truste.cma){var e=window.truste.cma.callApi("getConsent",window.location.href)||{},n=1===e[2],t=1===e[3];gtag("consent","update",{ad_storage:n?"granted":"denied",ad_user_data:n?"granted":"denied",ad_personalization:n?"granted":"denied",analytics_storage:t?"granted":"denied"})}}window.addEventListener&&(window.addEventListener("cm_data_subject_consent_changed",e),window.addEventListener("cm_consent_preferences_set",e)),"complete"===document.readyState?e():window.addEventListener("load",e)}()</script>
 <script>window._ibmAnalytics={settings:{name:"DataStax",tealiumProfileName:"ibm-subsidiary"},trustarc:{privacyPolicyLink:"https://ibm.com/privacy"}},window.digitalData={page:{pageInfo:{ibm:{siteId:"IBM_DataStax"}},category:{primaryCategory:"PC230"}}}</script>
 <script src="//1.www.s81c.com/common/stats/ibm-common.js" async="true"></script><link rel="stylesheet" href="/assets/css/styles.29e42e49.css">
-<script src="/assets/js/runtime~main.a09b72d8.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.a88dc6f2.js" defer="defer"></script>
 <script src="/assets/js/main.e1ba3126.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -33,39 +33,19 @@ See <a class="" href="/install-windows">Install OpenRAG on Windows</a> before pr
 </ul>
 <ul>
 <li class="">
-<p>Gather the credentials and connection details for your preferred model providers.
-You must have access to at least one language model and one embedding model.
-If a provider offers both types, you can use the same provider for both models.
-If a provider offers only one type, you must select two providers.</p>
+<p>Gather the credentials and connection details for one or more supported model providers:</p>
 <ul>
-<li class="">
-<p><strong>OpenAI</strong>: Create an <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" class="">OpenAI API key</a>.</p>
-</li>
-<li class="">
-<p><strong>Anthropic</strong>: Create an <a href="https://www.anthropic.com/docs/api/reference" target="_blank" rel="noopener noreferrer" class="">Anthropic API key</a>.
-Anthropic provides language models only; you must select an additional provider for embeddings.</p>
-</li>
-<li class="">
-<p><strong>IBM watsonx.ai</strong>: Get your watsonx.ai API endpoint, IBM project ID, and IBM API key from your watsonx deployment.</p>
-</li>
-<li class="">
-<p><strong>Ollama</strong>: Deploy an <a href="https://docs.ollama.com/" target="_blank" rel="noopener noreferrer" class="">Ollama instance and models</a> locally, in the cloud, or on a remote server. Then, get your Ollama server&#x27;s base URL and the names of the models that you want to use.</p>
-<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>info</div><div class="admonitionContent_BuS1"><p>OpenRAG isn&#x27;t guaranteed to be compatible with all models that are available through Ollama.
-For example, some models might produce unexpected results, such as JSON-formatted output instead of natural language responses, and some models aren&#x27;t appropriate for the types of tasks that OpenRAG performs, such as those that generate media.</p>
-<p>The OpenRAG team recommends the following models when using Ollama as your model provider:</p>
-<ul>
-<li class="">
-<p><strong>Language models</strong>: <code>gpt-oss:20b</code> or <code>mistral-nemo:12b</code>.</p>
-<p>If you choose <code>gpt-oss:20b</code>, consider using Ollama Cloud or running Ollama on a remote machine because this model requires at least 16GB of RAM.</p>
-</li>
-<li class="">
-<p><strong>Embedding models</strong>: <a href="https://ollama.com/library/nomic-embed-text" target="_blank" rel="noopener noreferrer" class=""><code>nomic-embed-text:latest</code></a>, <code>mxbai-embed-large:latest</code>, or <code>embeddinggemma:latest</code>.</p>
-</li>
+<li class=""><strong>OpenAI</strong>: Create an <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" class="">OpenAI API key</a>.</li>
+<li class=""><strong>Anthropic</strong>: Create an <a href="https://www.anthropic.com/docs/api/reference" target="_blank" rel="noopener noreferrer" class="">Anthropic API key</a>.
+Anthropic provides language models only; you must select an additional provider for embeddings.</li>
+<li class=""><strong>IBM watsonx.ai</strong>: Get your watsonx.ai API endpoint, IBM project ID, and IBM API key from your watsonx deployment.</li>
+<li class=""><strong>Ollama</strong>: Deploy an <a href="https://docs.ollama.com/" target="_blank" rel="noopener noreferrer" class="">Ollama instance and models</a> locally, in the cloud, or on a remote server. Then, get your Ollama server&#x27;s base URL and the names of the models that you want to use.</li>
 </ul>
-<p>You can experiment with other models, but if you encounter issues that you are unable to resolve through other RAG best practices (like context filters and prompt engineering), try switching to one of the recommended models.
-You can submit an <a href="https://github.com/langflow-ai/openrag/issues" target="_blank" rel="noopener noreferrer" class="">OpenRAG GitHub issue</a> to request support for specific models.</p></div></div>
-</li>
-</ul>
+<p>OpenRAG requires at least one language model and one embedding model.
+If a provider offers both types of models, then you can use the same provider for both models.
+If a provider offers only one type, then you must configure two providers.</p>
+<p>Language models must support tool calling to be compatible with OpenRAG.</p>
+<p>For more information, see <a href="#application-onboarding" class="">Application Onboarding</a>.</p>
 </li>
 <li class="">
 <p>Optional: Install GPU support with an NVIDIA GPU, <a href="https://docs.nvidia.com/cuda/" target="_blank" rel="noopener noreferrer" class="">CUDA</a> support, and compatible NVIDIA drivers on the OpenRAG host machine.
@@ -80,8 +60,8 @@ The default CPU-only deployment doesn&#x27;t prevent you from using GPU accelera
 <div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token function" style="color:#d73a49">mkdir</span><span class="token plain"> openrag-workspace</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token builtin class-name">cd</span><span class="token plain"> openrag-workspace</span><br></span></code></pre></div></div>
 </li>
 <li class="">
-<p>Get and run the installer script:</p>
-<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token function" style="color:#d73a49">curl</span><span class="token plain"> </span><span class="token parameter variable" style="color:#36acaa">-fsSL</span><span class="token plain"> https://docs.openr.ag/files/run_openrag_with_prereqs.sh </span><span class="token operator" style="color:#393A34">|</span><span class="token plain"> </span><span class="token function" style="color:#d73a49">bash</span><br></span></code></pre></div></div>
+<p>Download and run the OpenRAG installer script:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token function" style="color:#d73a49">curl</span><span class="token plain"> </span><span class="token parameter variable" style="color:#36acaa">-O</span><span class="token plain"> https://docs.openr.ag/files/run_openrag_with_prereqs.sh</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token function" style="color:#d73a49">bash</span><span class="token plain"> run_openrag_with_prereqs.sh</span><br></span></code></pre></div></div>
 <p>The installer script installs OpenRAG with <a href="https://docs.astral.sh/uv/guides/tools/#running-tools" target="_blank" rel="noopener noreferrer" class=""><code>uvx</code></a> in the directory where you run the script.</p>
 </li>
 <li class="">
@@ -102,23 +82,18 @@ The TUI guides you through the initial configuration process before you start th
 <p>Your configuration values are stored in an <a class="" href="/reference/configuration">OpenRAG <code>.env</code> file</a> that is created automatically at <code>~/.openrag/tui</code>.
 If OpenRAG detects an existing <code>.env</code> file in this directory, then the TUI can populate those values automatically during setup and onboarding.</p>
 <p>Container definitions are stored in the <code>docker-compose</code> files in the same directory as the OpenRAG <code>.env</code> file.</p>
-<p>You can use either <strong>Basic Setup</strong> or <strong>Advanced Setup</strong> to configure OpenRAG.
-This choice determines how OpenRAG authenticates with your deployment&#x27;s <a class="" href="/knowledge">OpenSearch instance</a>, and it controls user access to documents stored in your OpenSearch knowledge base:</p>
-<ul>
+<p>You can use either <strong>Basic Setup</strong> or <strong>Advanced Setup</strong> to configure OpenRAG.</p>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>info</div><div class="admonitionContent_BuS1"><p>You must use <strong>Advanced Setup</strong> if you want to enable either of the following during initial set up:</p><ul>
 <li class="">
-<p><strong>No-auth mode</strong>: If you select <strong>Basic Setup</strong> in the <a class="" href="/tui">TUI</a>, or your <a class="" href="/reference/configuration">OpenRAG <code>.env</code> file</a> doesn&#x27;t include OAuth credentials, then the OpenRAG OpenSearch instance runs in no-auth mode.</p>
-<p>This mode uses one anonymous JWT token for OpenSearch authentication.
-There is no differentiation between users; all users that access your OpenRAG instance can access all documents uploaded to your knowledge base.</p>
+<p><a class="" href="/knowledge#auth">OAuth mode</a>: Controls document ownership and access in your OpenRAG OpenSearch knowledge base.
+Without OAuth mode, there is no differentiation between users; all users that access your OpenRAG instance can access and manage all uploaded documents.</p>
 </li>
 <li class="">
-<p><strong>OAuth mode</strong>: If you select <strong>Advanced Setup</strong> in the <a class="" href="/tui">TUI</a>, or your <a class="" href="/reference/configuration">OpenRAG <code>.env</code> file</a> includes OAuth credentials, then the OpenRAG OpenSearch instance runs in OAuth mode.</p>
-<p>This mode uses a unique JWT token for each OpenRAG user, and each document is tagged with user ownership.
-Documents are filtered by user owner; users see only the documents that they uploaded or have access to through their cloud storage accounts.</p>
-<p>To enable OAuth mode after initial setup, see <a class="" href="/ingestion#oauth-ingestion">Ingest files with OAuth connectors</a>.</p>
+<p><a class="" href="/ingestion#oauth-ingestion">Cloud storage connectors</a>: Ingest documents from external storage services.</p>
 </li>
-</ul>
-<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>info</div><div class="admonitionContent_BuS1"><p>You must use <strong>Advanced Setup</strong> if you want to <a class="" href="/ingestion#oauth-ingestion">use OAuth connectors to upload documents from cloud storage</a>.</p></div></div>
-<p>If OpenRAG detects OAuth credentials during setup, it recommends <strong>Advanced Setup</strong> in the TUI.</p>
+</ul></div></div>
+<p>If OpenRAG detects <a class="" href="/reference/configuration#oauth-and-cloud-storage-connector-settings">OAuth or cloud storage connector credentials</a> during setup, it recommends <strong>Advanced Setup</strong> in the TUI.</p>
+<p>You can also enable these features later.</p>
 <div class="theme-tabs-container tabs-container tabList__CuJ"><ul role="tablist" aria-orientation="horizontal" class="tabs"><li role="tab" tabindex="0" aria-selected="true" class="tabs__item tabItem_LNqP tabs__item--active">Basic setup</li><li role="tab" tabindex="-1" aria-selected="false" class="tabs__item tabItem_LNqP">Advanced setup</li></ul><div class="margin-top--md"><div role="tabpanel" class="tabItem_Ymn6"><ol>
 <li class="">
 <p>In the TUI, select <strong>Basic Setup</strong>.</p>
@@ -174,7 +149,7 @@ If the Langflow password is empty, the Langflow server starts without authentica
 <p>You can click <strong>Generate Password</strong> to create a Langflow password and username automatically.</p>
 </li>
 <li class="">
-<p>Optional: Under <strong>API Keys</strong>, enter your model provider credentials, or leave the <strong>OpenAI</strong>, <strong>Anthropic</strong>, <strong>Ollama</strong>, and <strong>IBM watsonx.ai</strong> fields empty if you want to configure model provider credentials during the application onboarding process.</p>
+<p>Optional: Under <strong>API Keys</strong>, enter your model provider credentials, or leave these fields empty if you want to configure model provider credentials during the application onboarding process.</p>
 <p>There is no material difference between providing these values now or during the <a href="#application-onboarding" class="">application onboarding process</a>.
 If you provide a credential now, it can be populated automatically during the application onboarding process if you enable the <strong>Use environment API key</strong> option.</p>
 <p>OpenRAG&#x27;s core functionality requires access to language and embedding models.
@@ -182,17 +157,26 @@ By default, OpenRAG uses OpenAI models.
 If you aren&#x27;t sure which models or providers to use, you must provide an OpenAI API key to use OpenRAG&#x27;s default model configuration.</p>
 </li>
 <li class="">
-<p>Recommended: To upload documents from external storage, such as Google Drive, add the required OAuth credentials for the connectors that you want to use under <strong>API Keys</strong>. These settings can be populated automatically if OpenRAG detects these credentials in an <a class="" href="/reference/configuration">OpenRAG <code>.env</code> file</a> at <code>~/.openrag/tui</code>.</p>
+<p>Recommended: To enable OAuth mode or cloud storage connectors, enter the relevant OAuth credentials under <strong>API Keys</strong>. These settings can be populated automatically if OpenRAG detects these credentials in an <a class="" href="/reference/configuration">OpenRAG <code>.env</code> file</a> at <code>~/.openrag/tui</code>.</p>
 <ul>
-<li class=""><strong>Google</strong>: Provide your Google OAuth Client ID and Google OAuth Client Secret. You can generate these in the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" class="">Google Cloud Console</a>. For more information, see the <a href="https://developers.google.com/identity/protocols/oauth2" target="_blank" rel="noopener noreferrer" class="">Google OAuth client documentation</a>.</li>
-<li class=""><strong>Microsoft</strong>: For the Microsoft OAuth Client ID and Microsoft OAuth Client Secret, provide <a href="https://learn.microsoft.com/en-us/onedrive/developer/rest-api/getting-started/app-registration?view=odsp-graph-online" target="_blank" rel="noopener noreferrer" class="">Azure application registration credentials for SharePoint and OneDrive</a>. For more information, see the <a href="https://learn.microsoft.com/en-us/onedrive/developer/rest-api/getting-started/graph-oauth" target="_blank" rel="noopener noreferrer" class="">Microsoft Graph OAuth client documentation</a>.</li>
-<li class=""><strong>Amazon</strong>: Provide your AWS Access Key ID and AWS Secret Access Key with access to your S3 instance. For more information, see the AWS documentation on <a href="https://docs.aws.amazon.com/singlesignon/latest/userguide/manage-your-applications.html" target="_blank" rel="noopener noreferrer" class="">Configuring access to AWS applications</a>.</li>
-</ul>
-<p>You can <a class="" href="/ingestion#oauth-ingestion">manage OAuth credentials</a> later, but it is recommended to configure them during initial set up.</p>
+<li class="">
+<p><strong>Google</strong>: Enter your <strong>Google OAuth Client ID</strong> and <strong>Google OAuth Client Secret</strong>. You can generate these in the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" class="">Google Cloud Console</a>. For more information, see the <a href="https://developers.google.com/identity/protocols/oauth2" target="_blank" rel="noopener noreferrer" class="">Google OAuth client documentation</a>.</p>
+<p>Providing these Google credentials enables OAuth mode <em>and</em> the Google Drive cloud storage connector.</p>
+<div class="theme-admonition theme-admonition-warning admonition_xJq3 alert alert--warning"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.893 1.5c-.183-.31-.52-.5-.887-.5s-.703.19-.886.5L.138 13.499a.98.98 0 0 0 0 1.001c.193.31.53.501.886.501h13.964c.367 0 .704-.19.877-.5a1.03 1.03 0 0 0 .01-1.002L8.893 1.5zm.133 11.497H6.987v-2.003h2.039v2.003zm0-3.004H6.987V5.987h2.039v4.006z"></path></svg></span>warning</div><div class="admonitionContent_BuS1"><p>Google is the only supported OAuth provider for OpenRAG.</p><p>You must enter Google credentials if you want to enable OAuth mode.</p><p>The Microsoft and Amazon credentials are used only to authorize the cloud storage connectors.
+OpenRAG doesn&#x27;t offer OAuth provider integrations for Microsoft or Amazon.</p></div></div>
 </li>
 <li class="">
-<p>Register the redirect URIs shown in the TUI in your OAuth provider.
-These are the URLs your OAuth provider will use to redirect users back to OpenRAG after they sign in.</p>
+<p><strong>Microsoft</strong>: For the <strong>Microsoft OAuth Client ID</strong> and <strong>Microsoft OAuth Client Secret</strong>, enter <a href="https://learn.microsoft.com/en-us/onedrive/developer/rest-api/getting-started/app-registration?view=odsp-graph-online" target="_blank" rel="noopener noreferrer" class="">Azure application registration credentials for SharePoint and OneDrive</a>. For more information, see the <a href="https://learn.microsoft.com/en-us/onedrive/developer/rest-api/getting-started/graph-oauth" target="_blank" rel="noopener noreferrer" class="">Microsoft Graph OAuth client documentation</a>.</p>
+</li>
+<li class="">
+<p><strong>Amazon</strong>: Enter your <strong>AWS Access Key ID</strong> and <strong>AWS Secret Access Key</strong> with access to your S3 instance. For more information, see the AWS documentation on <a href="https://docs.aws.amazon.com/singlesignon/latest/userguide/manage-your-applications.html" target="_blank" rel="noopener noreferrer" class="">Configuring access to AWS applications</a>.</p>
+</li>
+</ul>
+</li>
+<li class="">
+<p>If you entered OAuth credentials: Register the redirect URIs shown in the TUI in your cloud service&#x27;s OAuth configuration.</p>
+<p>For Google, this URL is used to redirect users back to OpenRAG after they sign in, and for the cloud storage connector webhooks.</p>
+<p>For Microsoft and Amazon, this URL is used for the cloud storage connector webhooks.</p>
 </li>
 <li class="">
 <p>Optional: Under <strong>Others</strong>, you can edit the following settings if needed:</p>
@@ -200,12 +184,12 @@ These are the URLs your OAuth provider will use to redirect users back to OpenRA
 <li class=""><strong>Documents Paths</strong>: Use the default path or provide one or more paths to directories are where OpenRAG looks for documents to ingest in to your <a class="" href="/knowledge">knowledge base</a>.</li>
 <li class=""><strong>OpenSearch Data Path</strong>: Specify the path where you want OpenRAG to create your OpenSearch index.</li>
 <li class=""><strong>Langflow Public URL (<code>LANGFLOW_PUBLIC_URL</code>)</strong> : Sets the base address to access the Langflow web interface. This is where users interact with flows in a browser.</li>
-<li class=""><strong>Webhook Base URL (<code>WEBHOOK_BASE_URL</code>)</strong>: If applicable, set the base address for your OAuth connector endpoints. If set, the OAuth connector webhook URLs are constructed as <code>WEBHOOK_BASE_URL/connectors/${provider}/webhook</code>.</li>
+<li class=""><strong>Webhook Base URL (<code>WEBHOOK_BASE_URL</code>)</strong>: If you entered OAuth credentials, you can set the base address for your OAuth connector endpoints. If set, the OAuth connector webhook URLs are constructed as <code>WEBHOOK_BASE_URL/connectors/${provider}/webhook</code>. This option is required to enable automatic ingestion from cloud storage.</li>
 </ul>
 </li>
 <li class="">
 <p>Click <strong>Save Configuration</strong>.</p>
-<p>Your passwords, API key, and OAuth credentials, if provided, are stored in the <a class="" href="/reference/configuration">OpenRAG <code>.env</code> file</a> at <code>~/.openrag/tui</code>.
+<p>Your passwords, API key, and OAuth credentials (if provided) are stored in the <a class="" href="/reference/configuration">OpenRAG <code>.env</code> file</a> at <code>~/.openrag/tui</code>.
 If you modified any credentials that were pulled from an existing <code>.env</code> file, those values are updated in the <code>.env</code> file.</p>
 </li>
 <li class="">
@@ -216,9 +200,7 @@ If all services start successfully, the TUI prints a confirmation message:</p>
 </li>
 <li class="">
 <p>Click <strong>Close</strong>, and then click <strong>Launch OpenRAG</strong> or navigate to <code>localhost:3000</code> in your browser.</p>
-</li>
-<li class="">
-<p>If you enabled OAuth connectors, you must sign in to your OAuth provider before being redirected to your OpenRAG instance.</p>
+<p>If you provided Google OAuth credentials, you must sign in with Google before you are redirected to your OpenRAG instance.</p>
 </li>
 <li class="">
 <p>Continue with the <a href="#application-onboarding" class="">application onboarding process</a>.</p>
@@ -226,18 +208,19 @@ If all services start successfully, the TUI prints a confirmation message:</p>
 </ol></div></div></div>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="application-onboarding">Complete the application onboarding process<a href="#application-onboarding" class="hash-link" aria-label="Direct link to Complete the application onboarding process" title="Direct link to Complete the application onboarding process" translate="no">​</a></h2>
 <p>The first time you start the OpenRAG application, you must complete the application onboarding process to select language and embedding models that are essential for OpenRAG features like the <a class="" href="/chat"><strong>Chat</strong></a>.</p>
-<p>Some of these variables, such as the embedding models, can be changed seamlessly after onboarding.
-Others are immutable and require you to destroy and recreate the OpenRAG containers.
-For more information, see the <a class="" href="/reference/configuration">OpenRAG environment variables reference</a>.</p>
+<p>Some of these options, such as the models, can be changed in OpenRAG&#x27;s <strong>Settings</strong> after onboarding is complete.
+Other options are immutable and require you to destroy and recreate the OpenRAG containers, as explained in the <a class="" href="/reference/configuration">OpenRAG environment variables reference</a>.</p>
+<p>To complete onboarding, you must configure at least one language model and one embedding model.</p>
 <p>You can use different providers for your language model and embedding model, such as Anthropic for the language model and OpenAI for the embedding model.
-Additionally, you can set multiple embedding models.</p>
-<p>You only need to complete onboarding for your preferred providers.</p>
+Additionally, you can select multiple embedding models.</p>
 <div class="theme-tabs-container tabs-container tabList__CuJ"><ul role="tablist" aria-orientation="horizontal" class="tabs"><li role="tab" tabindex="0" aria-selected="true" class="tabs__item tabItem_LNqP tabs__item--active">Anthropic</li><li role="tab" tabindex="-1" aria-selected="false" class="tabs__item tabItem_LNqP">IBM watsonx.ai</li><li role="tab" tabindex="-1" aria-selected="false" class="tabs__item tabItem_LNqP">Ollama</li><li role="tab" tabindex="-1" aria-selected="false" class="tabs__item tabItem_LNqP">OpenAI (default)</li></ul><div class="margin-top--md"><div role="tabpanel" class="tabItem_Ymn6"><div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>info</div><div class="admonitionContent_BuS1"><p>Anthropic doesn&#x27;t provide embedding models. If you select Anthropic for your language model, you must select a different provider for the embedding model.</p></div></div><ol>
 <li class="">
 <p>Enter your Anthropic API key, or enable <strong>Use environment API key</strong> to pull the key from your <a class="" href="/reference/configuration">OpenRAG <code>.env</code> file</a>.</p>
 </li>
 <li class="">
 <p>Under <strong>Advanced settings</strong>, select the language model that you want to use.</p>
+<p>Language models must support tool calling to be compatible with OpenRAG.
+Incompatible models aren&#x27;t listed.</p>
 </li>
 <li class="">
 <p>Click <strong>Complete</strong>.</p>
@@ -256,7 +239,13 @@ Verify that the credential is valid and has access to the selected model, and th
 <p>Continue through the overview slides for a brief introduction to OpenRAG, or click <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg> <strong>Skip overview</strong>.
 The overview demonstrates some basic functionality that is covered in the <a class="" href="/quickstart#chat-with-documents">quickstart</a> and in other parts of the OpenRAG documentation.</p>
 </li>
-</ol></div><div role="tabpanel" class="tabItem_Ymn6" hidden=""><ol>
+</ol></div><div role="tabpanel" class="tabItem_Ymn6" hidden=""><div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>info</div><div class="admonitionContent_BuS1"><p>OpenRAG isn&#x27;t guaranteed to be compatible with all models that are available through IBM watsonx.ai.</p>
+<p>Language models must support tool calling to be compatible with OpenRAG.
+Incompatible models aren&#x27;t listed in OpenRAG&#x27;s settings or onboarding.</p>
+<p>Additionally, models must be able to handle the agentic reasoning tasks required by OpenRAG.
+Models that are too small or not designed for agentic RAG tasks can return low quality, incorrect, or improperly formatted responses.
+For more information, see <a class="" href="/chat#troubleshoot-chat">Troubleshoot chat</a>.</p>
+<p>You can submit an <a href="https://github.com/langflow-ai/openrag/issues" target="_blank" rel="noopener noreferrer" class="">OpenRAG GitHub issue</a> to request support for specific models.</p></div></div><ol>
 <li class="">
 <p>For <strong>watsonx.ai API Endpoint</strong>, select the base URL for your watsonx.ai model deployment.</p>
 </li>
@@ -266,6 +255,8 @@ The overview demonstrates some basic functionality that is covered in the <a cla
 </li>
 <li class="">
 <p>Under <strong>Advanced settings</strong>, select the language model that you want to use.</p>
+<p>Language models must support tool calling to be compatible with OpenRAG.
+Incompatible models aren&#x27;t listed.</p>
 </li>
 <li class="">
 <p>Click <strong>Complete</strong>.</p>
@@ -287,15 +278,15 @@ The overview demonstrates some basic functionality that is covered in the <a cla
 </ol></div><div role="tabpanel" class="tabItem_Ymn6" hidden=""><p>Using Ollama as your language and embedding model provider offers greater flexibility and configuration options for hosting models.
 However, it requires additional setup because Ollama isn&#x27;t included with OpenRAG.
 You must deploy Ollama separately if you want to use Ollama as a model provider.</p><div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>info</div><div class="admonitionContent_BuS1"><p>OpenRAG isn&#x27;t guaranteed to be compatible with all models that are available through Ollama.
-For example, some models might produce unexpected results, such as JSON-formatted output instead of natural language responses, and some models aren&#x27;t appropriate for the types of tasks that OpenRAG performs, such as those that generate media.</p>
-<p>The OpenRAG team recommends the following models when using Ollama as your model provider:</p>
+Some models might produce unexpected results, such as JSON-formatted output instead of natural language responses, and some models aren&#x27;t appropriate for the types of tasks that OpenRAG performs, such as those that generate media.</p>
 <ul>
 <li class="">
-<p><strong>Language models</strong>: <code>gpt-oss:20b</code> or <code>mistral-nemo:12b</code>.</p>
-<p>If you choose <code>gpt-oss:20b</code>, consider using Ollama Cloud or running Ollama on a remote machine because this model requires at least 16GB of RAM.</p>
+<p><strong>Language models</strong>: Ollama-hosted language models must support tool calling to be compatible with OpenRAG.
+The OpenRAG team recommends <code>gpt-oss:20b</code> or <code>mistral-nemo:12b</code>.
+If you choose <code>gpt-oss:20b</code>, consider using Ollama Cloud or running Ollama on a remote machine because this model requires at least 16GB of RAM.</p>
 </li>
 <li class="">
-<p><strong>Embedding models</strong>: <a href="https://ollama.com/library/nomic-embed-text" target="_blank" rel="noopener noreferrer" class=""><code>nomic-embed-text:latest</code></a>, <code>mxbai-embed-large:latest</code>, or <code>embeddinggemma:latest</code>.</p>
+<p><strong>Embedding models</strong>: The OpenRAG team recommends <a href="https://ollama.com/library/nomic-embed-text" target="_blank" rel="noopener noreferrer" class=""><code>nomic-embed-text:latest</code></a>, <code>mxbai-embed-large:latest</code>, or <code>embeddinggemma:latest</code>.</p>
 </li>
 </ul>
 <p>You can experiment with other models, but if you encounter issues that you are unable to resolve through other RAG best practices (like context filters and prompt engineering), try switching to one of the recommended models.
@@ -313,8 +304,9 @@ You can submit an <a href="https://github.com/langflow-ai/openrag/issues" target
 </ul>
 </li>
 <li class="">
-<p>Select the language model that your Ollama server is running.</p>
-<p>If your server isn&#x27;t running any language models, you must either deploy a language model on your Ollama server, or use another provider for the language model.</p>
+<p>Select a language model that your Ollama server is running.</p>
+<p>OpenRAG only lists language models that support tool calling.
+If your server isn&#x27;t running any compatible language models, you must either deploy a compatible language model on your Ollama server, or use another provider for the language model.</p>
 <p>Language model and embedding model selections are independent.
 You can use the same or different servers for each model.</p>
 <p>To use different providers for each model, you must configure both providers, and select the relevant model for each provider.</p>
@@ -343,6 +335,8 @@ The overview demonstrates some basic functionality that is covered in the <a cla
 </li>
 <li class="">
 <p>Under <strong>Advanced settings</strong>, select the language model that you want to use.</p>
+<p>Language models must support tool calling to be compatible with OpenRAG.
+Incompatible models aren&#x27;t listed.</p>
 </li>
 <li class="">
 <p>Click <strong>Complete</strong>.</p>
