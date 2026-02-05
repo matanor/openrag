@@ -4,6 +4,7 @@ slug: /support/troubleshoot
 ---
 
 import PartialOllamaModels from '@site/docs/_partial-ollama-models.mdx';
+import PartialWatsonxModels from '@site/docs/_partial-watsonx-models.mdx';
 
 This page provides troubleshooting advice for issues you might encounter when using OpenRAG or contributing to OpenRAG.
 
@@ -44,6 +45,12 @@ If the OpenRAG onboarding process gets stuck when using Google Chrome, try clear
 Verify that the value of the `LANGFLOW_SUPERUSER` environment variable is correct.
 For more information about this variable and how this variable controls Langflow access, see [Langflow settings](/reference/configuration#langflow-settings).
 
+## No container runtime found
+
+When you start the TUI, a `No container runtime found` error indicates that OpenRAG cannot find a running Docker or Podman machine.
+
+Make sure Docker or Podman is installed, available in the PATH, and a VM is running.
+
 ## Container out of memory errors {#container-out-of-memory-errors}
 
 Increase your container VM's allocated memory, or use a CPU-only deployment to reduce memory usage.
@@ -66,14 +73,18 @@ podman machine start
 
 ## Port conflicts
 
-With the default [environment variable](/reference/configuration) values, OpenRAG requires the following ports to be available on the host machine:
+By default, OpenRAG requires the following ports to be available on the host machine:
 
-* 3000: Langflow application
-* 5001: Docling local ingestion service
-* 5601: OpenSearch Dashboards
-* 7860: Docling UI
-* 8000: Docling API
-* 9200: OpenSearch service
+* `3000`: OpenRAG frontend
+* `7860`: Langflow service
+* `8000`: OpenRAG backend
+* `9200`: OpenSearch service
+* `5601`: OpenSearch dashboards
+* `5001`: Docling service
+
+If the default ports for the OpenRAG frontend (`3000`) or Langflow (`7860`) are already in use on your host machine, you can set the `FRONTEND_PORT` or `LANGFLOW_PORT` [environment variables](/reference/configuration) to map these services to different host ports.
+If you set `LANGFLOW_PORT`, you must also set `LANGFLOW_PUBLIC_URL` to use the new port.
+To apply the port mapping, [restart the containers](/manage-services#stop-and-start-containers) after editing your OpenRAG `.env` file.
 
 ## OCR ingestion fails (easyocr not installed) {#ocr-ingestion-fails-easyocr-not-installed}
 
@@ -153,9 +164,23 @@ To resolve this issue, do the following:
 
 See [Troubleshoot ingestion](/ingestion#troubleshoot-ingestion).
 
-## Ollama model issues
+## Ollama model issues {#ollama-model-issues}
 
 <PartialOllamaModels />
+
+## IBM watsonx.ai model issues {#ibm-watsonxai-model-issues}
+
+<PartialWatsonxModels />
+
+## Language model isn't listed in OpenRAG settings or onboarding
+
+If your language model isn't listed in the OpenRAG settings or application onboarding, then the model likely doesn't support tool calling, which is required for OpenRAG.
+You must select a different model.
+If no other models are listed, make sure your model provider API key or instance has access to models that support tool calling.
+
+See also [Ollama model issues](#ollama-model-issues), [IBM watsonx.ai model issues](#ibm-watsonxai-model-issues), and [Troubleshoot chat](/chat#troubleshoot-chat).
+
+You can submit an [OpenRAG GitHub issue](https://github.com/langflow-ai/openrag/issues) to request support for specific models.
 
 ## Chat issues
 

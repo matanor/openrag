@@ -4,8 +4,7 @@ import os
 import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional
-from dataclasses import dataclass, asdict
-
+from dataclasses import dataclass, asdict, field
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -88,12 +87,26 @@ class AgentConfig:
 
 
 @dataclass
+class OnboardingState:
+    """Onboarding state configuration."""
+
+    current_step: int = 0
+    assistant_message: Optional[Dict[str, Any]] = field(default=None)
+    selected_nudge: Optional[str] = field(default=None)
+    card_steps: Optional[Dict[str, Any]] = field(default=None)
+    upload_steps: Optional[Dict[str, Any]] = field(default=None)
+    openrag_docs_filter_id: Optional[str] = field(default=None)
+    user_doc_filter_id: Optional[str] = field(default=None)
+
+
+@dataclass
 class OpenRAGConfig:
     """Complete OpenRAG configuration."""
 
     providers: ProvidersConfig
     knowledge: KnowledgeConfig
     agent: AgentConfig
+    onboarding: OnboardingState
     edited: bool = False  # Track if manually edited
 
     @classmethod
@@ -109,6 +122,7 @@ class OpenRAGConfig:
             ),
             knowledge=KnowledgeConfig(**data.get("knowledge", {})),
             agent=AgentConfig(**data.get("agent", {})),
+            onboarding=OnboardingState(**data.get("onboarding", {})),
             edited=data.get("edited", False),
         )
 
@@ -158,6 +172,7 @@ class ConfigManager:
             },
             "knowledge": {},
             "agent": {},
+            "onboarding": {},
         }
 
         # Load from config file if it exists
@@ -174,7 +189,7 @@ class ConfigManager:
                                 file_config["providers"][provider]
                             )
 
-                for section in ["knowledge", "agent"]:
+                for section in ["knowledge", "agent", "onboarding"]:
                     if section in file_config:
                         config_data[section].update(file_config[section])
 
@@ -294,6 +309,31 @@ class ConfigManager:
             return True
         except Exception as e:
             logger.error(f"Failed to save configuration to {self.config_file}: {e}")
+            return False
+
+    def update_onboarding_state(self, **kwargs) -> bool:
+        """Update onboarding state fields.
+
+        Args:
+            **kwargs: Onboarding state fields to update (current_step, assistant_message, etc.)
+
+        Returns:
+            True if updated successfully, False otherwise.
+        """
+        try:
+            config = self.get_config()
+            
+            # Update only the provided fields
+            for key, value in kwargs.items():
+                if hasattr(config.onboarding, key):
+                    setattr(config.onboarding, key, value)
+                else:
+                    logger.warning(f"Unknown onboarding field: {key}")
+            
+            # Save the updated config
+            return self.save_config_file(config)
+        except Exception as e:
+            logger.error(f"Failed to update onboarding state: {e}")
             return False
 
 
