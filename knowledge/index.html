@@ -10,7 +10,7 @@
 <script>!function(){function e(){if(void 0!==window.truste&&window.truste.cma){var e=window.truste.cma.callApi("getConsent",window.location.href)||{},n=1===e[2],t=1===e[3];gtag("consent","update",{ad_storage:n?"granted":"denied",ad_user_data:n?"granted":"denied",ad_personalization:n?"granted":"denied",analytics_storage:t?"granted":"denied"})}}window.addEventListener&&(window.addEventListener("cm_data_subject_consent_changed",e),window.addEventListener("cm_consent_preferences_set",e)),"complete"===document.readyState?e():window.addEventListener("load",e)}()</script>
 <script>window._ibmAnalytics={settings:{name:"DataStax",tealiumProfileName:"ibm-subsidiary"},trustarc:{privacyPolicyLink:"https://ibm.com/privacy"}},window.digitalData={page:{pageInfo:{ibm:{siteId:"IBM_DataStax"}},category:{primaryCategory:"PC230"}}}</script>
 <script src="//1.www.s81c.com/common/stats/ibm-common.js" async="true"></script><link rel="stylesheet" href="/assets/css/styles.29e42e49.css">
-<script src="/assets/js/runtime~main.a88dc6f2.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.34a89b8f.js" defer="defer"></script>
 <script src="/assets/js/main.e1ba3126.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -156,7 +156,7 @@ The default value is 1000 characters, which is usually a good balance between co
 <li class="">
 <p><strong>Chunk overlap</strong>: Set the number of characters to overlap over chunk boundaries.
 Use larger overlap values for documents where context is most important. Use smaller overlap values for simpler documents or when optimization is most important.
-The default value is 200 characters, which represents an overlap of 20 percent if the <strong>Chunk size</strong> is 1000. This is suitable for general use. For faster processing, decrease the overlap to approximately 10 percent. For more complex documents where you need to preserve context across chunks, increase it to approximately 40 percent.</p>
+The default value is 200 characters, which represents an overlap of 20 percent with the default <strong>Chunk size</strong> of 1000. This is suitable for general use. For faster processing, decrease the overlap to approximately 10 percent. For more complex documents where you need to preserve context across chunks, increase it to approximately 40 percent.</p>
 </li>
 <li class="">
 <p><strong>Table structure</strong>: Enables Docling&#x27;s <a href="https://docling-project.github.io/docling/reference/document_converter/" target="_blank" rel="noopener noreferrer" class=""><code>DocumentConverter</code></a> tool for parsing tables. Instead of treating tables as plain text, tables are output as structured table data with preserved relationships and metadata. This option is enabled by default.</p>

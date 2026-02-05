@@ -10,7 +10,7 @@
 <script>!function(){function e(){if(void 0!==window.truste&&window.truste.cma){var e=window.truste.cma.callApi("getConsent",window.location.href)||{},n=1===e[2],t=1===e[3];gtag("consent","update",{ad_storage:n?"granted":"denied",ad_user_data:n?"granted":"denied",ad_personalization:n?"granted":"denied",analytics_storage:t?"granted":"denied"})}}window.addEventListener&&(window.addEventListener("cm_data_subject_consent_changed",e),window.addEventListener("cm_consent_preferences_set",e)),"complete"===document.readyState?e():window.addEventListener("load",e)}()</script>
 <script>window._ibmAnalytics={settings:{name:"DataStax",tealiumProfileName:"ibm-subsidiary"},trustarc:{privacyPolicyLink:"https://ibm.com/privacy"}},window.digitalData={page:{pageInfo:{ibm:{siteId:"IBM_DataStax"}},category:{primaryCategory:"PC230"}}}</script>
 <script src="//1.www.s81c.com/common/stats/ibm-common.js" async="true"></script><link rel="stylesheet" href="/assets/css/styles.29e42e49.css">
-<script src="/assets/js/runtime~main.a88dc6f2.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.34a89b8f.js" defer="defer"></script>
 <script src="/assets/js/main.e1ba3126.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -36,6 +36,7 @@ See <a class="" href="/install-windows">Install OpenRAG on Windows</a> before pr
 <p>The OpenRAG team recommends, at minimum, 8 GB of RAM for container VMs.
 However, if you plan to upload large files regularly, more RAM is recommended.
 For more information, see <a class="" href="/support/troubleshoot">Troubleshoot OpenRAG</a>.</p>
+<p>A Docker or Podman VM must be running before you start OpenRAG.</p>
 </li>
 <li class="">
 <p>Install <a href="https://docs.podman.io/en/latest/markdown/podman-compose.1.html" target="_blank" rel="noopener noreferrer" class=""><code>podman-compose</code></a> or <a href="https://docs.docker.com/compose/install/" target="_blank" rel="noopener noreferrer" class="">Docker Compose</a>.
@@ -118,6 +119,9 @@ The following variables are required or recommended:</p>
 <p>To enable <a class="" href="/knowledge#auth">OAuth mode</a> or <a class="" href="/ingestion#oauth-ingestion">cloud storage connectors</a>, do the following:</p>
 <ol>
 <li class="">
+<p>Register OpenRAG as an OAuth application in your cloud provider, and then obtain the app&#x27;s OAuth credentials, such as a client ID and secret key. To enable multiple connectors, you must register an app and generate credentials for each provider.</p>
+</li>
+<li class="">
 <p>In your <code>.env</code> file, set the <a class="" href="/reference/configuration#oauth-and-cloud-storage-connector-settings">OAuth environment variables</a> for the providers that you want to use:</p>
 <div class="language-env codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-env codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">GOOGLE_OAUTH_CLIENT_ID=</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">GOOGLE_OAUTH_CLIENT_SECRET=</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">MICROSOFT_GRAPH_OAUTH_CLIENT_ID=</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">MICROSOFT_GRAPH_OAUTH_CLIENT_SECRET=</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">AWS_ACCESS_KEY_ID=</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">AWS_SECRET_ACCESS_KEY=</span><br></span></code></pre></div></div>
 <ul>
@@ -136,14 +140,28 @@ OpenRAG doesn&#x27;t offer OAuth provider integrations for Microsoft or Amazon.<
 </ul>
 </li>
 <li class="">
-<p>Optional: Set the <code>WEBHOOK_BASE_URL</code> to the base address for your OAuth connector endpoints. If set, the OAuth connector webhook URLs are constructed as <code>WEBHOOK_BASE_URL/connectors/${provider}/webhook</code>. This option is required to enable automatic ingestion from cloud storage.</p>
+<p>For each connector, you must register the OpenRAG redirect URIs in your OAuth apps:</p>
+<ul>
+<li class="">Local deployments: <code>http://localhost:3000/auth/callback</code></li>
+<li class="">Production deployments: <code>https://your-domain.com/auth/callback</code></li>
+</ul>
+<p>The redirect URIs are used for the cloud storage connector webhooks. For Google, the redirect URIs are also used to redirect users back to OpenRAG after they sign in.</p>
 </li>
 <li class="">
-<p>For each provider, you must register an OpenRAG OAuth redirect URI in your cloud service&#x27;s OAuth configuration.</p>
-<p>For Google, this URL is used to redirect users back to OpenRAG after they sign in, and for the cloud storage connector webhooks.</p>
-<p>For Microsoft and Amazon, this URL is used for the cloud storage connector webhooks.</p>
+<p>Optional: Set the <code>WEBHOOK_BASE_URL</code> to the base address for your OAuth connector endpoints. If set, the OAuth connector webhook URLs are constructed as <code>WEBHOOK_BASE_URL/connectors/${provider}/webhook</code>. This option is required to enable automatic ingestion from cloud storage.</p>
 </li>
 </ol>
+</li>
+<li class="">
+<p>Optional: To enable the <a href="https://docs.langflow.org/integrations-langfuse" target="_blank" rel="noopener noreferrer" class="">Langflow integration with Langfuse</a>, set the following variables:</p>
+<ul>
+<li class=""><strong><code>LANGFUSE_SECRET_KEY</code></strong>: A secret key for your Langfuse project.</li>
+<li class=""><strong><code>LANGFUSE_PUBLIC_KEY</code></strong>: A public key for your Langfuse project.</li>
+<li class=""><strong><code>LANGFUSE_HOST</code></strong>: Required for self-hosted Langfuse deployments. Leave empty for Langfuse Cloud.</li>
+</ul>
+</li>
+<li class="">
+<p>Save your <code>.env</code> file.</p>
 </li>
 </ol>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="start-services">Start services<a href="#start-services" class="hash-link" aria-label="Direct link to Start services" title="Direct link to Start services" translate="no">​</a></h2>
@@ -198,8 +216,6 @@ For example, writing alternate ingest logic in OpenRAG that uses GPUs directly i
 </ol>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="application-onboarding">Complete the application onboarding process<a href="#application-onboarding" class="hash-link" aria-label="Direct link to Complete the application onboarding process" title="Direct link to Complete the application onboarding process" translate="no">​</a></h2>
 <p>The first time you start the OpenRAG application, you must complete the application onboarding process to select language and embedding models that are essential for OpenRAG features like the <a class="" href="/chat"><strong>Chat</strong></a>.</p>
-<p>Some of these options, such as the models, can be changed in OpenRAG&#x27;s <strong>Settings</strong> after onboarding is complete.
-Other options are immutable and require you to destroy and recreate the OpenRAG containers, as explained in the <a class="" href="/reference/configuration">OpenRAG environment variables reference</a>.</p>
 <p>To complete onboarding, you must configure at least one language model and one embedding model.</p>
 <p>You can use different providers for your language model and embedding model, such as Anthropic for the language model and OpenAI for the embedding model.
 Additionally, you can select multiple embedding models.</p>

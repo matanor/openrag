@@ -10,7 +10,7 @@
 <script>!function(){function e(){if(void 0!==window.truste&&window.truste.cma){var e=window.truste.cma.callApi("getConsent",window.location.href)||{},n=1===e[2],t=1===e[3];gtag("consent","update",{ad_storage:n?"granted":"denied",ad_user_data:n?"granted":"denied",ad_personalization:n?"granted":"denied",analytics_storage:t?"granted":"denied"})}}window.addEventListener&&(window.addEventListener("cm_data_subject_consent_changed",e),window.addEventListener("cm_consent_preferences_set",e)),"complete"===document.readyState?e():window.addEventListener("load",e)}()</script>
 <script>window._ibmAnalytics={settings:{name:"DataStax",tealiumProfileName:"ibm-subsidiary"},trustarc:{privacyPolicyLink:"https://ibm.com/privacy"}},window.digitalData={page:{pageInfo:{ibm:{siteId:"IBM_DataStax"}},category:{primaryCategory:"PC230"}}}</script>
 <script src="//1.www.s81c.com/common/stats/ibm-common.js" async="true"></script><link rel="stylesheet" href="/assets/css/styles.29e42e49.css">
-<script src="/assets/js/runtime~main.a88dc6f2.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.34a89b8f.js" defer="defer"></script>
 <script src="/assets/js/main.e1ba3126.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -37,6 +37,7 @@ See <a class="" href="/install-windows">Install OpenRAG on Windows</a> before pr
 <p>The OpenRAG team recommends, at minimum, 8 GB of RAM for container VMs.
 However, if you plan to upload large files regularly, more RAM is recommended.
 For more information, see <a class="" href="/support/troubleshoot">Troubleshoot OpenRAG</a>.</p>
+<p>A Docker or Podman VM must be running before you start OpenRAG.</p>
 </li>
 <li class="">
 <p>Install <a href="https://docs.podman.io/en/latest/markdown/podman-compose.1.html" target="_blank" rel="noopener noreferrer" class=""><code>podman-compose</code></a> or <a href="https://docs.docker.com/compose/install/" target="_blank" rel="noopener noreferrer" class="">Docker Compose</a>.
@@ -141,21 +142,16 @@ The TUI guides you through the initial configuration process before you start th
 <p>Your configuration values are stored in an <a class="" href="/reference/configuration">OpenRAG <code>.env</code> file</a> that is created automatically at <code>~/.openrag/tui</code>.
 If OpenRAG detects an existing <code>.env</code> file in this directory, then the TUI can populate those values automatically during setup and onboarding.</p>
 <p>Container definitions are stored in the <code>docker-compose</code> files in the same directory as the OpenRAG <code>.env</code> file.</p>
-<p>You can use either <strong>Basic Setup</strong> or <strong>Advanced Setup</strong> to configure OpenRAG.</p>
+<ol>
+<li class="">
+<p>In the TUI, click either <strong>Basic Setup</strong> or <strong>Advanced Setup</strong>.</p>
 <div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>info</div><div class="admonitionContent_BuS1"><p>You must use <strong>Advanced Setup</strong> if you want to enable either of the following during initial set up:</p><ul>
-<li class="">
-<p><a class="" href="/knowledge#auth">OAuth mode</a>: Controls document ownership and access in your OpenRAG OpenSearch knowledge base.
-Without OAuth mode, there is no differentiation between users; all users that access your OpenRAG instance can access and manage all uploaded documents.</p>
-</li>
-<li class="">
-<p><a class="" href="/ingestion#oauth-ingestion">Cloud storage connectors</a>: Ingest documents from external storage services.</p>
-</li>
+<li class=""><a class="" href="/knowledge#auth">OAuth mode</a>: Controls document ownership and access in your OpenRAG OpenSearch knowledge base.
+Without OAuth mode, there is no differentiation between users; all users that access your OpenRAG instance can access and manage all uploaded documents.</li>
+<li class=""><a class="" href="/ingestion#oauth-ingestion">Cloud storage connectors</a>: Ingest documents from external storage services.</li>
 </ul></div></div>
 <p>If OpenRAG detects <a class="" href="/reference/configuration#oauth-and-cloud-storage-connector-settings">OAuth or cloud storage connector credentials</a> during setup, it recommends <strong>Advanced Setup</strong> in the TUI.</p>
 <p>You can also enable these features later.</p>
-<div class="theme-tabs-container tabs-container tabList__CuJ"><ul role="tablist" aria-orientation="horizontal" class="tabs"><li role="tab" tabindex="0" aria-selected="true" class="tabs__item tabItem_LNqP tabs__item--active">Basic setup</li><li role="tab" tabindex="-1" aria-selected="false" class="tabs__item tabItem_LNqP">Advanced setup</li></ul><div class="margin-top--md"><div role="tabpanel" class="tabItem_Ymn6"><ol>
-<li class="">
-<p>In the TUI, select <strong>Basic Setup</strong>.</p>
 </li>
 <li class="">
 <p>Enter administrator passwords for the OpenRAG OpenSearch and Langflow services.</p>
@@ -173,50 +169,13 @@ By default, OpenRAG uses OpenAI models.
 If you aren&#x27;t sure which models or providers to use, you must provide an OpenAI API key to use OpenRAG&#x27;s default model configuration.</p>
 </li>
 <li class="">
-<p>Optional: Under <strong>Others</strong>, edit the <a class="" href="/knowledge">knowledge base</a> paths if you don&#x27;t want to use the default paths:</p>
-<ul>
-<li class=""><strong>Documents Paths</strong>: One or more paths to directories are where OpenRAG looks for documents to ingest.</li>
-<li class=""><strong>OpenSearch Data Path</strong>: Specify the path where you want OpenRAG to create your OpenSearch index.</li>
-</ul>
+<p><strong>Advanced Setup</strong> only: To enable OAuth mode or cloud storage connectors, do the following:</p>
+<ol>
+<li class="">
+<p>Register OpenRAG as an OAuth application in your cloud provider, and then obtain the app&#x27;s OAuth credentials, such as a client ID and secret key. To enable multiple connectors, you must register an app and generate credentials for each provider.</p>
 </li>
 <li class="">
-<p>Click <strong>Save Configuration</strong>.</p>
-<p>Your passwords and API keys, if provided, are stored in the <a class="" href="/reference/configuration">OpenRAG <code>.env</code> file</a> at <code>~/.openrag/tui</code>.
-If you modified any credentials that were pulled from an existing <code>.env</code> file, those values are updated in the <code>.env</code> file.</p>
-</li>
-<li class="">
-<p>Click <strong>Start OpenRAG</strong> to start the OpenRAG services.</p>
-<p>This process can take some time while OpenRAG pulls and runs the container images.
-If all services start successfully, the TUI prints a confirmation message:</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">Services started successfully</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Command completed successfully</span><br></span></code></pre></div></div>
-</li>
-<li class="">
-<p>Click <strong>Close</strong>, and then click <strong>Launch OpenRAG</strong> or navigate to <code>localhost:3000</code> in your browser.</p>
-</li>
-<li class="">
-<p>Continue with the <a href="#application-onboarding" class="">application onboarding process</a>.</p>
-</li>
-</ol></div><div role="tabpanel" class="tabItem_Ymn6" hidden=""><ol>
-<li class="">
-<p>In the TUI, select <strong>Advanced Setup</strong>.</p>
-</li>
-<li class="">
-<p>Enter administrator passwords for the OpenRAG OpenSearch and Langflow services.</p>
-<p>The OpenSearch password is required, and a secure password is automatically generated if you don&#x27;t provide one manually.</p>
-<p>The Langflow password is recommended but optional.
-If the Langflow password is empty, the Langflow server starts without authentication enabled. For more information, see <a class="" href="/reference/configuration#langflow-settings">Langflow settings</a>.</p>
-<p>You can click <strong>Generate Password</strong> to create a Langflow password and username automatically.</p>
-</li>
-<li class="">
-<p>Optional: Under <strong>API Keys</strong>, enter your model provider credentials, or leave these fields empty if you want to configure model provider credentials during the application onboarding process.</p>
-<p>There is no material difference between providing these values now or during the <a href="#application-onboarding" class="">application onboarding process</a>.
-If you provide a credential now, it can be populated automatically during the application onboarding process if you enable the <strong>Use environment API key</strong> option.</p>
-<p>OpenRAG&#x27;s core functionality requires access to language and embedding models.
-By default, OpenRAG uses OpenAI models.
-If you aren&#x27;t sure which models or providers to use, you must provide an OpenAI API key to use OpenRAG&#x27;s default model configuration.</p>
-</li>
-<li class="">
-<p>Recommended: To enable OAuth mode or cloud storage connectors, enter the relevant OAuth credentials under <strong>API Keys</strong>. These settings can be populated automatically if OpenRAG detects these credentials in an <a class="" href="/reference/configuration">OpenRAG <code>.env</code> file</a> at <code>~/.openrag/tui</code>.</p>
+<p>Enter the relevant OAuth credentials under <strong>API Keys</strong> in the TUI&#x27;s <strong>Advanced Setup</strong>:</p>
 <ul>
 <li class="">
 <p><strong>Google</strong>: Enter your <strong>Google OAuth Client ID</strong> and <strong>Google OAuth Client Secret</strong>. You can generate these in the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" class="">Google Cloud Console</a>. For more information, see the <a href="https://developers.google.com/identity/protocols/oauth2" target="_blank" rel="noopener noreferrer" class="">Google OAuth client documentation</a>.</p>
@@ -231,19 +190,29 @@ OpenRAG doesn&#x27;t offer OAuth provider integrations for Microsoft or Amazon.<
 <p><strong>Amazon</strong>: Enter your <strong>AWS Access Key ID</strong> and <strong>AWS Secret Access Key</strong> with access to your S3 instance. For more information, see the AWS documentation on <a href="https://docs.aws.amazon.com/singlesignon/latest/userguide/manage-your-applications.html" target="_blank" rel="noopener noreferrer" class="">Configuring access to AWS applications</a>.</p>
 </li>
 </ul>
+<p>The credentials can be populated automatically if OpenRAG detects these credentials in an <a class="" href="/reference/configuration">OpenRAG <code>.env</code> file</a> at <code>~/.openrag/tui</code>.</p>
 </li>
 <li class="">
-<p>If you entered OAuth credentials: Register the redirect URIs shown in the TUI in your cloud service&#x27;s OAuth configuration.</p>
-<p>For Google, this URL is used to redirect users back to OpenRAG after they sign in, and for the cloud storage connector webhooks.</p>
-<p>For Microsoft and Amazon, this URL is used for the cloud storage connector webhooks.</p>
+<p>Register the redirect URIs shown in the TUI in your OAuth apps.</p>
+<p>The redirect URIs are used for the cloud storage connector webhooks. For Google, the redirect URIs are also used to redirect users back to OpenRAG after they sign in.</p>
+</li>
+</ol>
+</li>
+<li class="">
+<p>Optional: Under <strong>Langfuse (Tracing)</strong>, enter Langfuse credentials to enable the <a href="https://docs.langflow.org/integrations-langfuse" target="_blank" rel="noopener noreferrer" class="">Langflow integration with Langfuse</a>:</p>
+<ul>
+<li class=""><strong>Langfuse Secret Key</strong>: A secret key for your Langfuse project.</li>
+<li class=""><strong>Langfuse Public Key</strong>: A public key for your Langfuse project.</li>
+<li class=""><strong>Langfuse Host</strong>: Required for self-hosted Langfuse deployments. Leave empty for Langfuse Cloud.</li>
+</ul>
 </li>
 <li class="">
 <p>Optional: Under <strong>Others</strong>, you can edit the following settings if needed:</p>
 <ul>
-<li class=""><strong>Documents Paths</strong>: Use the default path or provide one or more paths to directories are where OpenRAG looks for documents to ingest in to your <a class="" href="/knowledge">knowledge base</a>.</li>
-<li class=""><strong>OpenSearch Data Path</strong>: Specify the path where you want OpenRAG to create your OpenSearch index.</li>
-<li class=""><strong>Langflow Public URL (<code>LANGFLOW_PUBLIC_URL</code>)</strong> : Sets the base address to access the Langflow web interface. This is where users interact with flows in a browser.</li>
-<li class=""><strong>Webhook Base URL (<code>WEBHOOK_BASE_URL</code>)</strong>: If you entered OAuth credentials, you can set the base address for your OAuth connector endpoints. If set, the OAuth connector webhook URLs are constructed as <code>WEBHOOK_BASE_URL/connectors/${provider}/webhook</code>. This option is required to enable automatic ingestion from cloud storage.</li>
+<li class=""><strong>Documents Paths</strong>: Use the default path, or provide a path to a directory where you want OpenRAG to look for documents to ingest into your <a class="" href="/knowledge">knowledge base</a>.</li>
+<li class=""><strong>OpenSearch Data Path</strong>: Use the default path, or specify the path where you want OpenRAG to create your OpenSearch index.</li>
+<li class=""><strong>Langflow Public URL (Advanced Setup only)</strong> : Sets the base address to access the Langflow web interface where users interact with the Langflow editor in a browser. You must set this value to run Langflow on a non-default port (<code>7860</code>)</li>
+<li class=""><strong>Webhook Base URL (Advanced Setup only)</strong>: If you entered OAuth credentials, you can set the base address for your OAuth connector endpoints. If set, the OAuth connector webhook URLs are constructed as <code>WEBHOOK_BASE_URL/connectors/${provider}/webhook</code>. This option is required to enable automatic ingestion from cloud storage.</li>
 </ul>
 </li>
 <li class="">
@@ -264,11 +233,9 @@ If all services start successfully, the TUI prints a confirmation message:</p>
 <li class="">
 <p>Continue with the <a href="#application-onboarding" class="">application onboarding process</a>.</p>
 </li>
-</ol></div></div></div>
+</ol>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="application-onboarding">Complete the application onboarding process<a href="#application-onboarding" class="hash-link" aria-label="Direct link to Complete the application onboarding process" title="Direct link to Complete the application onboarding process" translate="no">​</a></h2>
 <p>The first time you start the OpenRAG application, you must complete the application onboarding process to select language and embedding models that are essential for OpenRAG features like the <a class="" href="/chat"><strong>Chat</strong></a>.</p>
-<p>Some of these options, such as the models, can be changed in OpenRAG&#x27;s <strong>Settings</strong> after onboarding is complete.
-Other options are immutable and require you to destroy and recreate the OpenRAG containers, as explained in the <a class="" href="/reference/configuration">OpenRAG environment variables reference</a>.</p>
 <p>To complete onboarding, you must configure at least one language model and one embedding model.</p>
 <p>You can use different providers for your language model and embedding model, such as Anthropic for the language model and OpenAI for the embedding model.
 Additionally, you can select multiple embedding models.</p>
