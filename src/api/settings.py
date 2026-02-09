@@ -2,6 +2,7 @@ import json
 import platform
 import time
 from starlette.responses import JSONResponse
+
 from utils.container_utils import transform_localhost_url
 from utils.logging_config import get_logger
 from utils.telemetry import TelemetryClient, Category, MessageId
@@ -188,6 +189,48 @@ async def get_settings(request, session_manager):
             {"error": f"Failed to retrieve settings: {str(e)}"}, status_code=500
         )
 
+async def validate_enum_str(
+    body: dict,
+    field_name: str,
+    allowed_values: list[str],
+) -> JSONResponse | None:
+    """
+    Validate that body[field_name], if present, is:
+      - a string,
+      - non-empty after stripping whitespace,
+      - and one of the allowed_values.
+
+    """
+    # If not provided, no validation needed
+    if field_name not in body:
+        return None
+
+    value = body[field_name]
+
+    # Must be a string
+    if not isinstance(value, str):
+        return JSONResponse(
+            {"error": f"{field_name} must be a string"},
+            status_code=400,
+        )
+
+    # Must be non-empty after trimming
+    trimmed = value.strip()
+    if not trimmed:
+        return JSONResponse(
+            {"error": f"{field_name} must be a non-empty string"},
+            status_code=400,
+        )
+
+    # Must be among allowed values
+    if trimmed not in allowed_values:
+        allowed_str = ", ".join(allowed_values)
+        return JSONResponse(
+            {"error": f"{field_name} must be one of: {allowed_str}"},
+            status_code=400,
+        )
+
+    return None
 
 async def update_settings(request, session_manager):
     """Update application settings"""
@@ -212,8 +255,11 @@ async def update_settings(request, session_manager):
             "llm_model",
             "llm_provider",
             "system_prompt",
+            "index_name",
             "chunk_size",
             "chunk_overlap",
+            "splitter_type",
+            "use_document_title",
             "table_structure",
             "ocr",
             "picture_descriptions",
@@ -278,36 +324,21 @@ async def update_settings(request, session_manager):
                     status_code=400,
                 )
 
-        if "llm_provider" in body:
-            if (
-                not isinstance(body["llm_provider"], str)
-                or not body["llm_provider"].strip()
-            ):
-                return JSONResponse(
-                    {"error": "llm_provider must be a non-empty string"},
-                    status_code=400,
-                )
-            if body["llm_provider"] not in ["openai", "anthropic", "watsonx", "ollama"]:
-                return JSONResponse(
-                    {"error": "llm_provider must be one of: openai, anthropic, watsonx, ollama"},
-                    status_code=400,
-                )
+        response = await validate_enum_str(body, field_name="splitter_type",
+            allowed_values=[
+                "CharacterTextSplitter", "LineBasedTextSplitter", "TableAwareTextSplitter"
+            ]
+        )
+        if response:
+            return response
 
-        if "embedding_provider" in body:
-            if (
-                not isinstance(body["embedding_provider"], str)
-                or not body["embedding_provider"].strip()
-            ):
-                return JSONResponse(
-                    {"error": "embedding_provider must be a non-empty string"},
-                    status_code=400,
-                )
-            # Anthropic doesn't have embeddings
-            if body["embedding_provider"] not in ["openai", "watsonx", "ollama"]:
-                return JSONResponse(
-                    {"error": "embedding_provider must be one of: openai, watsonx, ollama"},
-                    status_code=400,
-                )
+        response = await validate_enum_str(body, field_name="llm_provider", allowed_values=["openai", "anthropic", "watsonx", "ollama"])
+        if response:
+            return response
+
+        response = await validate_enum_str(body, field_name="embedding_provider", allowed_values=["openai", "watsonx", "ollama"])
+        if response:
+            return response
 
         # Validate provider-specific fields
         for key in ["openai_api_key", "anthropic_api_key", "watsonx_api_key"]:
@@ -466,6 +497,19 @@ async def update_settings(request, session_manager):
                 Category.SETTINGS_OPERATIONS, 
                 MessageId.ORB_SETTINGS_EMBED_MODEL
             )
+
+            # Also update the ingest flow with a new model id
+            try:
+                flows_service = _get_flows_service()
+                await flows_service.update_ingest_flow_model_id_in_text_splitter(model_id=new_embedding_model)
+                logger.info(
+                    f"Successfully updated ingest flow model id in text splitter to {new_embedding_model}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to update ingest flow model id in text splitter: {str(e)}")
+                # Don't fail the entire settings update if flow update fails
+                # The config will still be saved
+
             logger.info(f"Embedding model changed from {old_model} to {new_embedding_model}")
 
         if "embedding_provider" in body:
@@ -522,6 +566,71 @@ async def update_settings(request, session_manager):
                 await _update_langflow_docling_settings(current_config, flows_service)
             except Exception as e:
                 logger.error(f"Failed to update docling settings in flow: {str(e)}")
+
+        if "index_name" in body:
+            import config.settings as settings
+            settings.INDEX_NAME = body["index_name"]
+            # also update ?
+            # current_config.knowledge.index_name =
+            config_updated = True
+            #await TelemetryClient.send_event(
+            #    Category.SETTINGS_OPERATIONS,
+            #    MessageId.ORB_SETTINGS_UPDATED
+            #)
+
+            # Also update the flows with the new index name
+            try:
+                flows_service = _get_flows_service()
+                await flows_service.update_flows_index_name(settings.INDEX_NAME)
+                logger.info(
+                    f"Successfully updated flows index name to '{settings.INDEX_NAME}'."
+                )
+            except Exception as e:
+                logger.error(f"Failed to update ingest flow index name: {str(e)}")
+                # Don't fail the entire settings update if flow update fails
+                # The config will still be saved
+
+        if "splitter_type" in body:
+            new_splitter_type = body["splitter_type"]
+            current_config.knowledge.splitter_type = new_splitter_type
+            config_updated = True
+            await TelemetryClient.send_event(
+                Category.SETTINGS_OPERATIONS,
+                MessageId.ORB_SETTINGS_CHUNK_UPDATED
+            )
+
+            # Also update the ingest flow with the new splitter type
+            try:
+                flows_service = _get_flows_service()
+                await flows_service.update_ingest_flow_splitter_type(new_splitter_type)
+                logger.info(
+                    f"Successfully updated ingest flow splitter type to {new_splitter_type}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to update ingest flow splitter type: {str(e)}")
+                # Don't fail the entire settings update if flow update fails
+                # The config will still be saved
+
+        if "use_document_title" in body:
+            new_use_document_title = body["use_document_title"]
+            current_config.knowledge.use_document_title = new_use_document_title
+            config_updated = True
+            await TelemetryClient.send_event(
+                Category.SETTINGS_OPERATIONS,
+                MessageId.ORB_SETTINGS_CHUNK_UPDATED
+            )
+
+            # Also update the ingest flow with the new splitter type
+            try:
+                flows_service = _get_flows_service()
+                await flows_service.update_ingest_flow_use_document_title(new_use_document_title)
+                logger.info(
+                    f"Successfully updated ingest flow use_document_title to {new_use_document_title}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to update ingest flow use_document_title do: {str(e)}")
+                # Don't fail the entire settings update if flow update fails
+                # The config will still be saved
 
         if "chunk_size" in body:
             current_config.knowledge.chunk_size = body["chunk_size"]
@@ -696,6 +805,7 @@ async def onboarding(request, flows_service, session_manager=None):
             "llm_model",
             "embedding_provider",
             "embedding_model",
+            "delete_existing_index",
             "sample_data",
             # Provider-specific fields
             "openai_api_key",
@@ -709,9 +819,11 @@ async def onboarding(request, flows_service, session_manager=None):
         # Check for invalid fields
         invalid_fields = set(body.keys()) - allowed_fields
         if invalid_fields:
+            error_message = f"Invalid fields: {', '.join(invalid_fields)}. Allowed fields: {', '.join(allowed_fields)}"
+            logger.error(error_message)
             return JSONResponse(
                 {
-                    "error": f"Invalid fields: {', '.join(invalid_fields)}. Allowed fields: {', '.join(allowed_fields)}"
+                    "error": error_message
                 },
                 status_code=400,
             )
@@ -985,10 +1097,12 @@ async def onboarding(request, flows_service, session_manager=None):
                 # Import here to avoid circular imports
                 from main import init_index
 
+                delete_existing_index = body.get("delete_existing_index", False)
+                delete_existing_index = bool(delete_existing_index)
                 logger.info(
-                    "Initializing OpenSearch index after onboarding configuration"
+                    f"Initializing OpenSearch index after onboarding configuration (delete_existing_index={delete_existing_index})",
                 )
-                await init_index()
+                await init_index(delete_existing=delete_existing_index)
                 logger.info("OpenSearch index initialization completed successfully")
             except Exception as e:
                 if isinstance(e, ValueError):
@@ -1490,9 +1604,17 @@ async def rollback_onboarding(request, session_manager, task_service):
 
         # Only allow rollback if config was marked as edited (onboarding completed)
         if not current_config.edited:
+            logger.info("No onboarding configuration to rollback")
             return JSONResponse(
                 {"error": "No onboarding configuration to rollback"}, status_code=400
             )
+
+        import config.settings as settings
+        if await clients.opensearch.indices.exists(index=settings.INDEX_NAME):
+            # DELETE /<index_name>
+            logger.info(f"Deleting index '{settings.INDEX_NAME}'...")
+            resp = await clients.opensearch.indices.delete(index=settings.INDEX_NAME)
+            logger.info(f"Deleted '{settings.INDEX_NAME}': {resp}")
 
         user = request.state.user
         jwt_token = session_manager.get_effective_jwt_token(user.user_id, request.state.jwt_token)
@@ -1539,12 +1661,12 @@ async def rollback_onboarding(request, session_manager, task_service):
                                     
                                     # Delete documents by filename
                                     from utils.opensearch_queries import build_filename_delete_body
-                                    from config.settings import INDEX_NAME
+                                    import config.settings as settings
                                     
                                     delete_query = build_filename_delete_body(filename)
                                     
                                     result = await opensearch_client.delete_by_query(
-                                        index=INDEX_NAME,
+                                        index=settings.INDEX_NAME,
                                         body=delete_query,
                                         conflicts="proceed"
                                     )

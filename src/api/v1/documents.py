@@ -115,7 +115,7 @@ async def delete_document_endpoint(request: Request, document_service, session_m
     user = request.state.user
 
     try:
-        from config.settings import INDEX_NAME
+        import config.settings as settings
         from utils.opensearch_queries import build_filename_delete_body
 
         # Get OpenSearch client (API key auth uses internal client)
@@ -127,7 +127,7 @@ async def delete_document_endpoint(request: Request, document_service, session_m
         delete_query = build_filename_delete_body(filename)
 
         result = await opensearch_client.delete_by_query(
-            index=INDEX_NAME,
+            index=settings.INDEX_NAME,
             body=delete_query,
             conflicts="proceed"
         )
