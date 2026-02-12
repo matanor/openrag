@@ -266,7 +266,6 @@ async def update_settings(request, session_manager):
             "picture_descriptions",
             "embedding_model",
             "embedding_provider",
-            "index_name",
             # Provider-specific fields (structured as provider_name.field_name)
             "openai_api_key",
             "anthropic_api_key",
@@ -583,29 +582,6 @@ async def update_settings(request, session_manager):
                 await _update_langflow_docling_settings(current_config, flows_service)
             except Exception as e:
                 logger.error(f"Failed to update docling settings in flow: {str(e)}")
-
-        if "index_name" in body:
-            import config.settings as settings
-            settings.INDEX_NAME = body["index_name"]
-            # also update ?
-            # current_config.knowledge.index_name =
-            config_updated = True
-            #await TelemetryClient.send_event(
-            #    Category.SETTINGS_OPERATIONS,
-            #    MessageId.ORB_SETTINGS_UPDATED
-            #)
-
-            # Also update the flows with the new index name
-            try:
-                flows_service = _get_flows_service()
-                await flows_service.update_flows_index_name(settings.INDEX_NAME)
-                logger.info(
-                    f"Successfully updated flows index name to '{settings.INDEX_NAME}'."
-                )
-            except Exception as e:
-                logger.error(f"Failed to update ingest flow index name: {str(e)}")
-                # Don't fail the entire settings update if flow update fails
-                # The config will still be saved
 
         if "splitter_type" in body:
             new_splitter_type = body["splitter_type"]
