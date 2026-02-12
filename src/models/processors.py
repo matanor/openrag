@@ -20,7 +20,7 @@ class TaskProcessor:
         Check if a document with the given hash already exists in OpenSearch.
         Consolidated hash checking for all processors.
         """
-        import config.settings as settings
+        from config.settings import get_index_name
         import asyncio
 
         max_retries = 3
@@ -28,7 +28,7 @@ class TaskProcessor:
 
         for attempt in range(max_retries):
             try:
-                exists = await opensearch_client.exists(index=settings.INDEX_NAME, id=file_hash)
+                exists = await opensearch_client.exists(index=get_index_name(), id=file_hash)
                 return exists
             except (asyncio.TimeoutError, Exception) as e:
                 if attempt == max_retries - 1:
@@ -64,7 +64,7 @@ class TaskProcessor:
         Check if a document with the given filename already exists in OpenSearch.
         Returns True if any chunks with this filename exist.
         """
-        import config.settings as settings
+        from config.settings import get_index_name
         from utils.opensearch_queries import build_filename_search_body
         import asyncio
 
@@ -77,7 +77,7 @@ class TaskProcessor:
                 search_body = build_filename_search_body(filename, size=1, source=False)
 
                 response = await opensearch_client.search(
-                    index=settings.INDEX_NAME,
+                    index=get_index_name(),
                     body=search_body
                 )
 
@@ -118,7 +118,7 @@ class TaskProcessor:
         """
         Delete all chunks of a document with the given filename from OpenSearch.
         """
-        import config.settings as settings
+        from config.settings import get_index_name
         from utils.opensearch_queries import build_filename_delete_body
 
         try:
@@ -126,7 +126,7 @@ class TaskProcessor:
             delete_body = build_filename_delete_body(filename)
 
             response = await opensearch_client.delete_by_query(
-                index=settings.INDEX_NAME,
+                index=get_index_name(),
                 body=delete_body
             )
 
@@ -158,6 +158,7 @@ class TaskProcessor:
         connector_type: str = "local",
         embedding_model: str = None,
         is_sample_data: bool = False,
+        acl: "DocumentACL" = None,
     ):
         """
         Standard processing pipeline for non-Langflow processors:
@@ -166,10 +167,10 @@ class TaskProcessor:
         Args:
             embedding_model: Embedding model to use (defaults to the current
                 embedding model from settings)
+            acl: DocumentACL instance with access control information
         """
         import datetime
-        from config.settings import clients, get_embedding_model
-        import config.settings as settings
+        from config.settings import clients, get_embedding_model, get_index_name
         from services.document_service import chunk_texts_for_embeddings
         from utils.document_processing import extract_relevant
         from utils.embedding_fields import get_embedding_field_name, ensure_embedding_field_exists
@@ -188,7 +189,7 @@ class TaskProcessor:
 
         # Ensure the embedding field exists for this model
         embedding_field_name = await ensure_embedding_field_exists(
-            opensearch_client, embedding_model, settings.INDEX_NAME
+            opensearch_client, embedding_model, get_index_name()
         )
 
         logger.info(
@@ -252,9 +253,20 @@ class TaskProcessor:
                 "indexed_time": datetime.datetime.now().isoformat(),
             }
 
-            # Only set owner fields if owner_user_id is provided (for no-auth mode support)
-            if owner_user_id is not None:
-                chunk_doc["owner"] = owner_user_id
+            # Set owner and ACL fields
+            if acl:
+                # Use ACL data if provided (from connector)
+                chunk_doc["owner"] = acl.owner if acl.owner else owner_user_id
+                chunk_doc["allowed_users"] = acl.allowed_users
+                chunk_doc["allowed_groups"] = acl.allowed_groups
+            else:
+                # Fallback to owner_user_id if no ACL (local uploads)
+                if owner_user_id is not None:
+                    chunk_doc["owner"] = owner_user_id
+                    chunk_doc["allowed_users"] = []
+                    chunk_doc["allowed_groups"] = []
+
+            # Set owner metadata fields (for display)
             if owner_name is not None:
                 chunk_doc["owner_name"] = owner_name
             if owner_email is not None:
@@ -266,7 +278,7 @@ class TaskProcessor:
             chunk_id = f"{file_hash}_{i}"
             try:
                 await opensearch_client.index(
-                    index=settings.INDEX_NAME, id=chunk_id, body=chunk_doc
+                    index=get_index_name(), id=chunk_id, body=chunk_doc
                 )
             except Exception as e:
                 logger.error(
@@ -446,6 +458,7 @@ class ConnectorFileProcessor(TaskProcessor):
                     owner_email=self.owner_email,
                     file_size=len(document.content),
                     connector_type=connection.connector_type,
+                    acl=document.acl,
                 )
 
                 # Add connector-specific metadata
@@ -602,7 +615,7 @@ class S3FileProcessor(TaskProcessor):
         import time
         import asyncio
         import datetime
-        from config.settings import clients, get_embedding_model
+        from config.settings import clients, get_embedding_model, get_index_name
         from services.document_service import chunk_texts_for_embeddings
         from utils.document_processing import process_document_sync
 

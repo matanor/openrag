@@ -1,8 +1,8 @@
 import copy
+import json
 from typing import Any, Dict
 from agentd.tool_decorator import tool
-import config.settings as settings
-from config.settings import EMBED_MODEL, clients, get_embedding_model, WATSONX_EMBEDDING_DIMENSIONS
+from config.settings import EMBED_MODEL, clients, get_embedding_model, get_index_name, WATSONX_EMBEDDING_DIMENSIONS
 from auth_context import get_auth_context
 from utils.logging_config import get_logger
 
@@ -121,7 +121,7 @@ class SearchService:
                     }
 
                 agg_result = await opensearch_client.search(
-                    index=settings.INDEX_NAME, body=agg_query, params={"terminate_after": 0}
+                    index=get_index_name(), body=agg_query, params={"terminate_after": 0}
                 )
                 buckets = agg_result.get("aggregations", {}).get("embedding_models", {}).get("buckets", [])
                 available_models = [b["key"] for b in buckets if b["key"]]
@@ -330,7 +330,7 @@ class SearchService:
         search_body = {
             "query": query_block,
             "aggs": {
-                "data_sources": {"terms": {"field": "filename", "size": 20}},
+                "data_sources": {"terms": {"field": "filename.keyword", "size": 20}},
                 "document_types": {"terms": {"field": "mimetype", "size": 10}},
                 "owners": {"terms": {"field": "owner_name.keyword", "size": 10}},
                 "connector_types": {"terms": {"field": "connector_type", "size": 10}},
@@ -398,7 +398,7 @@ class SearchService:
         try:
             logger.info(f"Sending query to index '{settings.INDEX_NAME}'..")
             results = await opensearch_client.search(
-                index=settings.INDEX_NAME, body=search_body, params=search_params
+                index=get_index_name(), body=search_body, params=search_params
             )
         except RequestError as e:
             error_message = str(e)
@@ -411,7 +411,7 @@ class SearchService:
                 )
                 try:
                     results = await opensearch_client.search(
-                        index=settings.INDEX_NAME,
+                        index=get_index_name(),
                         body=fallback_search_body,
                         params=search_params,
                     )
@@ -437,21 +437,25 @@ class SearchService:
         # Transform results (keep for backward compatibility)
         chunks = []
         for hit in results["hits"]["hits"]:
+            source = hit.get("_source", {})
             chunks.append(
                 {
-                    "filename": hit["_source"].get("filename"),
-                    "mimetype": hit["_source"].get("mimetype"),
-                    "page": hit["_source"].get("page"),
-                    "text": hit["_source"].get("text"),
+                    "filename": source.get("filename"),
+                    "mimetype": source.get("mimetype"),
+                    "page": source.get("page"),
+                    "text": source.get("text"),
                     "score": hit.get("_score"),
-                    "source_url": hit["_source"].get("source_url"),
-                    "owner": hit["_source"].get("owner"),
-                    "owner_name": hit["_source"].get("owner_name"),
-                    "owner_email": hit["_source"].get("owner_email"),
-                    "file_size": hit["_source"].get("file_size"),
-                    "connector_type": hit["_source"].get("connector_type"),
-                    "embedding_model": hit["_source"].get("embedding_model"),  # Include in results
-                    "embedding_dimensions": hit["_source"].get("embedding_dimensions"),
+                    "source_url": source.get("source_url"),
+                    "owner": source.get("owner"),
+                    "owner_name": source.get("owner_name"),
+                    "owner_email": source.get("owner_email"),
+                    "file_size": source.get("file_size"),
+                    "connector_type": source.get("connector_type"),
+                    "embedding_model": source.get("embedding_model"),  # Include in results
+                    "embedding_dimensions": source.get("embedding_dimensions"),
+                    # ACL fields (may be missing for some documents)
+                    "allowed_users": source.get("allowed_users", []),
+                    "allowed_groups": source.get("allowed_groups", []),
                 }
             )
 
