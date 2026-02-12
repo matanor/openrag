@@ -10,8 +10,8 @@
 <script>!function(){function e(){if(void 0!==window.truste&&window.truste.cma){var e=window.truste.cma.callApi("getConsent",window.location.href)||{},n=1===e[2],t=1===e[3];gtag("consent","update",{ad_storage:n?"granted":"denied",ad_user_data:n?"granted":"denied",ad_personalization:n?"granted":"denied",analytics_storage:t?"granted":"denied"})}}window.addEventListener&&(window.addEventListener("cm_data_subject_consent_changed",e),window.addEventListener("cm_consent_preferences_set",e)),"complete"===document.readyState?e():window.addEventListener("load",e)}()</script>
 <script>window._ibmAnalytics={settings:{name:"DataStax",tealiumProfileName:"ibm-subsidiary"},trustarc:{privacyPolicyLink:"https://ibm.com/privacy"}},window.digitalData={page:{pageInfo:{ibm:{siteId:"IBM_DataStax"}},category:{primaryCategory:"PC230"}}}</script>
 <script src="//1.www.s81c.com/common/stats/ibm-common.js" async="true"></script><link rel="stylesheet" href="/assets/css/styles.29e42e49.css">
-<script src="/assets/js/runtime~main.34a89b8f.js" defer="defer"></script>
-<script src="/assets/js/main.e1ba3126.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.cbac11bf.js" defer="defer"></script>
+<script src="/assets/js/main.6ed493b9.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -57,7 +57,7 @@ Anthropic provides language models only; you must select an additional provider 
 If a provider offers both types of models, then you can use the same provider for both models.
 If a provider offers only one type, then you must configure two providers.</p>
 <p>Language models must support tool calling to be compatible with OpenRAG.</p>
-<p>For more information, see <a href="#application-onboarding" class="">Application Onboarding</a>.</p>
+<p>For more information, see <a href="#application-onboarding" class="">Complete the application onboarding process</a>.</p>
 </li>
 <li class="">
 <p>Optional: Install GPU support with an NVIDIA GPU, <a href="https://docs.nvidia.com/cuda/" target="_blank" rel="noopener noreferrer" class="">CUDA</a> support, and compatible NVIDIA drivers on the OpenRAG host machine.
@@ -116,7 +116,7 @@ The following variables are required or recommended:</p>
 </ul>
 </li>
 <li class="">
-<p>To enable <a class="" href="/knowledge#auth">OAuth mode</a> or <a class="" href="/ingestion#oauth-ingestion">cloud storage connectors</a>, do the following:</p>
+<p>To enable <a class="" href="/knowledge-connectors">OAuth mode or cloud storage connectors</a>, do the following:</p>
 <ol>
 <li class="">
 <p>Register OpenRAG as an OAuth application in your cloud provider, and then obtain the app&#x27;s OAuth credentials, such as a client ID and secret key. To enable multiple connectors, you must register an app and generate credentials for each provider.</p>
@@ -173,7 +173,7 @@ OpenRAG doesn&#x27;t offer OAuth provider integrations for Microsoft or Amazon.<
 For more information, see <a class="" href="/manage-services#start-native-services">Stop, start, and inspect native services</a>.</p>
 <p>Port 5001 is required to deploy OpenRAG successfully; don&#x27;t use a different port.
 Additionally, this enables the <a href="https://opensource.apple.com/projects/mlx/" target="_blank" rel="noopener noreferrer" class="">MLX framework</a> for accelerated performance on Apple Silicon Mac machines.</p>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>tip</div><div class="admonitionContent_BuS1"><p>If you don&#x27;t want to use the default Docling Serve implementation, see <a class="" href="/knowledge#select-a-docling-implementation">Select a Docling implementation</a>.</p></div></div>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>tip</div><div class="admonitionContent_BuS1"><p>If you don&#x27;t want to use the default Docling Serve implementation, see <a class="" href="/ingestion-configure#select-a-docling-implementation">Select a Docling implementation</a>.</p></div></div>
 </li>
 <li class="">
 <p>Confirm <code>docling serve</code> is running.</p>
@@ -237,7 +237,7 @@ For information about another provider&#x27;s credentials and settings, see the 
 </li>
 <li class="">
 <p>Click <strong>Complete</strong>.</p>
-<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
+<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge-browse#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
 If there is a problem with the model configuration, an error occurs and you are redirected back to the application onboarding screen.
 Verify that the credential is valid and has access to the selected model, and then click <strong>Complete</strong> to retry ingestion.</p>
 </li>
@@ -250,7 +250,7 @@ The overview demonstrates some basic functionality that is covered in the <a cla
 Incompatible models aren&#x27;t listed in OpenRAG&#x27;s settings or onboarding.</p>
 <p>Additionally, models must be able to handle the agentic reasoning tasks required by OpenRAG.
 Models that are too small or not designed for agentic RAG tasks can return low quality, incorrect, or improperly formatted responses.
-For more information, see <a class="" href="/chat#troubleshoot-chat">Troubleshoot chat</a>.</p>
+For more information, see <a class="" href="/support/troubleshoot#chat-issues">Chat issues</a>.</p>
 <p>You can submit an <a href="https://github.com/langflow-ai/openrag/issues" target="_blank" rel="noopener noreferrer" class="">OpenRAG GitHub issue</a> to request support for specific models.</p></div></div><ol>
 <li class="">
 <p>For <strong>watsonx.ai API Endpoint</strong>, select the base URL for your watsonx.ai model deployment.</p>
@@ -273,7 +273,7 @@ For information about another provider&#x27;s credentials and settings, see the 
 </li>
 <li class="">
 <p>Click <strong>Complete</strong>.</p>
-<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
+<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge-browse#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
 If there is a problem with the model configuration, an error occurs and you are redirected back to the application onboarding screen.
 Verify that the credentials are valid and have access to the selected model, and then click <strong>Complete</strong> to retry ingestion.</p>
 </li>
@@ -326,7 +326,7 @@ For information about another provider&#x27;s credentials and settings, see the 
 </li>
 <li class="">
 <p>Click <strong>Complete</strong>.</p>
-<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
+<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge-browse#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
 If there is a problem with the model configuration, an error occurs and you are redirected back to the application onboarding screen.
 Verify that the server address is valid, and that the selected model is running on the server.
 Then, click <strong>Complete</strong> to retry ingestion.</p>
@@ -353,7 +353,7 @@ For information about another provider&#x27;s credentials and settings, see the 
 </li>
 <li class="">
 <p>Click <strong>Complete</strong>.</p>
-<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
+<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge-browse#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
 If there is a problem with the model configuration, an error occurs and you are redirected back to the application onboarding screen.
 Verify that the credential is valid and has access to the selected model, and then click <strong>Complete</strong> to retry ingestion.</p>
 </li>

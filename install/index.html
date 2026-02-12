@@ -10,8 +10,8 @@
 <script>!function(){function e(){if(void 0!==window.truste&&window.truste.cma){var e=window.truste.cma.callApi("getConsent",window.location.href)||{},n=1===e[2],t=1===e[3];gtag("consent","update",{ad_storage:n?"granted":"denied",ad_user_data:n?"granted":"denied",ad_personalization:n?"granted":"denied",analytics_storage:t?"granted":"denied"})}}window.addEventListener&&(window.addEventListener("cm_data_subject_consent_changed",e),window.addEventListener("cm_consent_preferences_set",e)),"complete"===document.readyState?e():window.addEventListener("load",e)}()</script>
 <script>window._ibmAnalytics={settings:{name:"DataStax",tealiumProfileName:"ibm-subsidiary"},trustarc:{privacyPolicyLink:"https://ibm.com/privacy"}},window.digitalData={page:{pageInfo:{ibm:{siteId:"IBM_DataStax"}},category:{primaryCategory:"PC230"}}}</script>
 <script src="//1.www.s81c.com/common/stats/ibm-common.js" async="true"></script><link rel="stylesheet" href="/assets/css/styles.29e42e49.css">
-<script src="/assets/js/runtime~main.34a89b8f.js" defer="defer"></script>
-<script src="/assets/js/main.e1ba3126.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.cbac11bf.js" defer="defer"></script>
+<script src="/assets/js/main.6ed493b9.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -45,7 +45,7 @@ Anthropic provides language models only; you must select an additional provider 
 If a provider offers both types of models, then you can use the same provider for both models.
 If a provider offers only one type, then you must configure two providers.</p>
 <p>Language models must support tool calling to be compatible with OpenRAG.</p>
-<p>For more information, see <a href="#application-onboarding" class="">Application Onboarding</a>.</p>
+<p>For more information, see <a href="#application-onboarding" class="">Complete the application onboarding process</a>.</p>
 </li>
 <li class="">
 <p>Optional: Install GPU support with an NVIDIA GPU, <a href="https://docs.nvidia.com/cuda/" target="_blank" rel="noopener noreferrer" class="">CUDA</a> support, and compatible NVIDIA drivers on the OpenRAG host machine.
@@ -85,10 +85,10 @@ If OpenRAG detects an existing <code>.env</code> file in this directory, then th
 <ol>
 <li class="">
 <p>In the TUI, click either <strong>Basic Setup</strong> or <strong>Advanced Setup</strong>.</p>
-<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>info</div><div class="admonitionContent_BuS1"><p>You must use <strong>Advanced Setup</strong> if you want to enable either of the following during initial set up:</p><ul>
-<li class=""><a class="" href="/knowledge#auth">OAuth mode</a>: Controls document ownership and access in your OpenRAG OpenSearch knowledge base.
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>info</div><div class="admonitionContent_BuS1"><p>You must use <strong>Advanced Setup</strong> if you want to enable either <a class="" href="/knowledge-connectors">OAuth mode or cloud storage connectors</a> during initial set up:</p><ul>
+<li class=""><strong>OAuth mode</strong>: Controls document ownership and access in your OpenRAG <a class="" href="/knowledge">OpenSearch knowledge base</a>.
 Without OAuth mode, there is no differentiation between users; all users that access your OpenRAG instance can access and manage all uploaded documents.</li>
-<li class=""><a class="" href="/ingestion#oauth-ingestion">Cloud storage connectors</a>: Ingest documents from external storage services.</li>
+<li class=""><strong>Cloud storage connectors</strong>: Enables ingestion of documents from external storage services.</li>
 </ul></div></div>
 <p>If OpenRAG detects <a class="" href="/reference/configuration#oauth-and-cloud-storage-connector-settings">OAuth or cloud storage connector credentials</a> during setup, it recommends <strong>Advanced Setup</strong> in the TUI.</p>
 <p>You can also enable these features later.</p>
@@ -149,7 +149,7 @@ OpenRAG doesn&#x27;t offer OAuth provider integrations for Microsoft or Amazon.<
 <li class="">
 <p>Optional: Under <strong>Others</strong>, you can edit the following settings if needed:</p>
 <ul>
-<li class=""><strong>Documents Paths</strong>: Use the default path, or provide a path to a directory where you want OpenRAG to look for documents to ingest into your <a class="" href="/knowledge">knowledge base</a>.</li>
+<li class=""><strong>Documents Paths</strong>: Set the <a class="" href="/ingestion-configure#set-the-local-documents-path">local documents path</a>. Use the default path, or provide a path to a directory where you want OpenRAG to look for documents to ingest into your <a class="" href="/knowledge">knowledge base</a>.</li>
 <li class=""><strong>OpenSearch Data Path</strong>: Use the default path, or specify the path where you want OpenRAG to create your OpenSearch index.</li>
 <li class=""><strong>Langflow Public URL (Advanced Setup only)</strong> : Sets the base address to access the Langflow web interface where users interact with the Langflow editor in a browser. You must set this value to run Langflow on a non-default port (<code>7860</code>)</li>
 <li class=""><strong>Webhook Base URL (Advanced Setup only)</strong>: If you entered OAuth credentials, you can set the base address for your OAuth connector endpoints. If set, the OAuth connector webhook URLs are constructed as <code>WEBHOOK_BASE_URL/connectors/${provider}/webhook</code>. This option is required to enable automatic ingestion from cloud storage.</li>
@@ -197,7 +197,7 @@ For information about another provider&#x27;s credentials and settings, see the 
 </li>
 <li class="">
 <p>Click <strong>Complete</strong>.</p>
-<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
+<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge-browse#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
 If there is a problem with the model configuration, an error occurs and you are redirected back to the application onboarding screen.
 Verify that the credential is valid and has access to the selected model, and then click <strong>Complete</strong> to retry ingestion.</p>
 </li>
@@ -210,7 +210,7 @@ The overview demonstrates some basic functionality that is covered in the <a cla
 Incompatible models aren&#x27;t listed in OpenRAG&#x27;s settings or onboarding.</p>
 <p>Additionally, models must be able to handle the agentic reasoning tasks required by OpenRAG.
 Models that are too small or not designed for agentic RAG tasks can return low quality, incorrect, or improperly formatted responses.
-For more information, see <a class="" href="/chat#troubleshoot-chat">Troubleshoot chat</a>.</p>
+For more information, see <a class="" href="/support/troubleshoot#chat-issues">Chat issues</a>.</p>
 <p>You can submit an <a href="https://github.com/langflow-ai/openrag/issues" target="_blank" rel="noopener noreferrer" class="">OpenRAG GitHub issue</a> to request support for specific models.</p></div></div><ol>
 <li class="">
 <p>For <strong>watsonx.ai API Endpoint</strong>, select the base URL for your watsonx.ai model deployment.</p>
@@ -233,7 +233,7 @@ For information about another provider&#x27;s credentials and settings, see the 
 </li>
 <li class="">
 <p>Click <strong>Complete</strong>.</p>
-<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
+<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge-browse#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
 If there is a problem with the model configuration, an error occurs and you are redirected back to the application onboarding screen.
 Verify that the credentials are valid and have access to the selected model, and then click <strong>Complete</strong> to retry ingestion.</p>
 </li>
@@ -286,7 +286,7 @@ For information about another provider&#x27;s credentials and settings, see the 
 </li>
 <li class="">
 <p>Click <strong>Complete</strong>.</p>
-<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
+<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge-browse#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
 If there is a problem with the model configuration, an error occurs and you are redirected back to the application onboarding screen.
 Verify that the server address is valid, and that the selected model is running on the server.
 Then, click <strong>Complete</strong> to retry ingestion.</p>
@@ -313,7 +313,7 @@ For information about another provider&#x27;s credentials and settings, see the 
 </li>
 <li class="">
 <p>Click <strong>Complete</strong>.</p>
-<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
+<p>After you configure the embedding model, OpenRAG uses your credentials and models to ingest some <a class="" href="/knowledge-browse#default-documents">initial documents</a>. This tests the connection, and it allows you to ask OpenRAG about itself in the <a class="" href="/chat"><strong>Chat</strong></a>.
 If there is a problem with the model configuration, an error occurs and you are redirected back to the application onboarding screen.
 Verify that the credential is valid and has access to the selected model, and then click <strong>Complete</strong> to retry ingestion.</p>
 </li>
