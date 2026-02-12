@@ -14,6 +14,7 @@ from config.settings import (
     LANGFLOW_PUBLIC_URL,
     LOCALHOST_URL,
     clients,
+    get_index_name,
     get_openrag_config,
     config_manager,
     is_no_auth_mode,
@@ -678,7 +679,7 @@ async def update_settings(request, session_manager):
 
             # Also update global variable with new index name
             try:
-                await clients._create_langflow_global_variable("OPENSEARCH_INDEX_NAME", new_index_name)
+                await clients._create_langflow_global_variable("OPENSEARCH_INDEX_NAME", new_index_name, modify=True)
                 logger.info(
                     f"Successfully updated global variable with new index name {new_index_name}"
                 )
@@ -1624,11 +1625,12 @@ async def rollback_onboarding(request, session_manager, task_service):
             )
 
         import config.settings as settings
-        if await clients.opensearch.indices.exists(index=settings.INDEX_NAME):
+        index_name = get_index_name()
+        if await clients.opensearch.indices.exists(index=index_name):
             # DELETE /<index_name>
-            logger.info(f"Deleting index '{settings.INDEX_NAME}'...")
-            resp = await clients.opensearch.indices.delete(index=settings.INDEX_NAME)
-            logger.info(f"Deleted '{settings.INDEX_NAME}': {resp}")
+            logger.info(f"Deleting index '{index_name}'...")
+            resp = await clients.opensearch.indices.delete(index=index_name)
+            logger.info(f"Deleted '{index_name}': {resp}")
 
         user = request.state.user
         jwt_token = session_manager.get_effective_jwt_token(user.user_id, request.state.jwt_token)
@@ -1675,12 +1677,12 @@ async def rollback_onboarding(request, session_manager, task_service):
                                     
                                     # Delete documents by filename
                                     from utils.opensearch_queries import build_filename_delete_body
-                                    from config.settings import INDEX_NAME
+                                    from config.settings import get_index_name
                                     
                                     delete_query = build_filename_delete_body(filename)
                                     
                                     result = await opensearch_client.delete_by_query(
-                                        index=INDEX_NAME,
+                                        index=get_index_name(),
                                         body=delete_query,
                                         conflicts="proceed"
                                     )
