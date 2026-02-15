@@ -258,7 +258,6 @@ async def update_settings(request, session_manager):
             "llm_model",
             "llm_provider",
             "system_prompt",
-            "index_name",
             "chunk_size",
             "chunk_overlap",
             "splitter_type",
@@ -268,6 +267,7 @@ async def update_settings(request, session_manager):
             "picture_descriptions",
             "embedding_model",
             "embedding_provider",
+            "index_name",
             # Provider-specific fields (structured as provider_name.field_name)
             "openai_api_key",
             "anthropic_api_key",
