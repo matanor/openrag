@@ -268,7 +268,6 @@ async def update_settings(request, session_manager):
             "picture_descriptions",
             "embedding_model",
             "embedding_provider",
-            "index_name",
             # Provider-specific fields (structured as provider_name.field_name)
             "openai_api_key",
             "anthropic_api_key",
@@ -833,7 +832,6 @@ async def onboarding(request, flows_service, session_manager=None):
             "embedding_provider",
             "embedding_model",
             "delete_existing_index",
-            "sample_data",
             # Provider-specific fields
             "openai_api_key",
             "anthropic_api_key",
@@ -1632,18 +1630,9 @@ async def rollback_onboarding(request, session_manager, task_service):
 
         # Only allow rollback if config was marked as edited (onboarding completed)
         if not current_config.edited:
-            logger.info("No onboarding configuration to rollback")
             return JSONResponse(
                 {"error": "No onboarding configuration to rollback"}, status_code=400
             )
-
-        import config.settings as settings
-        index_name = get_index_name()
-        if await clients.opensearch.indices.exists(index=index_name):
-            # DELETE /<index_name>
-            logger.info(f"Deleting index '{index_name}'...")
-            resp = await clients.opensearch.indices.delete(index=index_name)
-            logger.info(f"Deleted '{index_name}': {resp}")
 
         user = request.state.user
         jwt_token = session_manager.get_effective_jwt_token(user.user_id, request.state.jwt_token)
