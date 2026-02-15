@@ -154,6 +154,7 @@ async def configure_alerting_security():
 
 async def _ensure_opensearch_index():
     """Ensure OpenSearch index exists when using traditional connector service."""
+    import config.settings as settings
     try:
         index_name = get_index_name()
         # Check if index already exists
@@ -183,8 +184,9 @@ async def _ensure_opensearch_index():
         # The service can still function, document operations might fail later
 
 
-async def init_index():
+async def init_index(delete_existing: bool = False):
     """Initialize OpenSearch index and security roles"""
+    import config.settings as settings
     await wait_for_opensearch()
 
     # Get the configured embedding model from user configuration
@@ -201,9 +203,17 @@ async def init_index():
         endpoint=getattr(embedding_provider_config, "endpoint", None)
     )
 
-    # Create documents index
     index_name = get_index_name()
-    if not await clients.opensearch.indices.exists(index=index_name):
+    index_exists = await clients.opensearch.indices.exists(index=index_name)
+    if index_exists and delete_existing:
+        # Asked to delete the existing index ..
+        logger.info(f"Deleting index '{index_name}'...")
+        resp = await clients.opensearch.indices.delete(index=index_name)
+        logger.info(f"Deleted index '{index_name}', response: {resp}")
+        index_exists = False
+
+    # Create documents index
+    if not index_exists:
         await clients.opensearch.indices.create(
             index=index_name, body=dynamic_index_body
         )
@@ -603,6 +613,7 @@ async def startup_tasks(services):
 
 
 async def initialize_services():
+    import config.settings as settings
     """Initialize all services and their dependencies"""
     await TelemetryClient.send_event(Category.SERVICE_INITIALIZATION, MessageId.ORB_SVC_INIT_START)
     # Generate JWT keys if they don't exist

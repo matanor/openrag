@@ -1,6 +1,8 @@
 """Provider validation utilities for testing API keys and models during onboarding."""
 
 import json
+import os
+
 import httpx
 from utils.container_utils import transform_localhost_url
 from utils.logging_config import get_logger
@@ -107,7 +109,6 @@ def _extract_error_details(response: httpx.Response) -> str:
             return parsed
         return response_text
 
-
 async def validate_provider_setup(
     provider: str,
     api_key: str = None,
@@ -125,7 +126,7 @@ async def validate_provider_setup(
         api_key: API key for the provider (optional for ollama)
         embedding_model: Embedding model to test
         llm_model: LLM model to test
-        endpoint: Provider endpoint (required for ollama and watsonx)
+        endpoint: Provider endpoint (required for ollama and watsonx, optional for openai)
         project_id: Project ID (required for watsonx)
         test_completion: If True, performs full validation with completion/embedding tests (consumes credits).
                         If False, performs lightweight validation (no credits consumed). Default: False.
@@ -138,11 +139,14 @@ async def validate_provider_setup(
     try:
         logger.info(f"Starting validation for provider: {provider_lower} (test_completion={test_completion})")
 
+        if provider == "openai" and not endpoint:
+            endpoint = os.environ.get("OPENAI_API_BASE", "https://api.openai.com")
+
         if test_completion:
             # Full validation with completion/embedding tests (consumes credits)
             if embedding_model:
                 # Test embedding
-                await test_embedding(
+                await _test_embedding(
                     provider=provider_lower,
                     api_key=api_key,
                     embedding_model=embedding_model,
@@ -151,7 +155,7 @@ async def validate_provider_setup(
                 )
             elif llm_model:
                 # Test completion with tool calling
-                await test_completion_with_tools(
+                await _test_completion_with_tools(
                     provider=provider_lower,
                     api_key=api_key,
                     llm_model=llm_model,
@@ -160,7 +164,7 @@ async def validate_provider_setup(
                 )
         else:
             # Lightweight validation (no credits consumed)
-            await test_lightweight_health(
+            await _test_lightweight_health(
                 provider=provider_lower,
                 api_key=api_key,
                 endpoint=endpoint,
@@ -175,7 +179,7 @@ async def validate_provider_setup(
         raise
 
 
-async def test_lightweight_health(
+async def _test_lightweight_health(
     provider: str,
     api_key: str = None,
     endpoint: str = None,
@@ -184,7 +188,7 @@ async def test_lightweight_health(
     """Test provider health with lightweight check (no credits consumed)."""
 
     if provider == "openai":
-        await _test_openai_lightweight_health(api_key)
+        await _test_openai_lightweight_health(api_key, endpoint)
     elif provider == "watsonx":
         await _test_watsonx_lightweight_health(api_key, endpoint, project_id)
     elif provider == "ollama":
@@ -195,7 +199,7 @@ async def test_lightweight_health(
         raise ValueError(f"Unknown provider: {provider}")
 
 
-async def test_completion_with_tools(
+async def _test_completion_with_tools(
     provider: str,
     api_key: str = None,
     llm_model: str = None,
@@ -205,7 +209,7 @@ async def test_completion_with_tools(
     """Test completion with tool calling for the provider."""
 
     if provider == "openai":
-        await _test_openai_completion_with_tools(api_key, llm_model)
+        await _test_openai_completion_with_tools(api_key, llm_model, endpoint)
     elif provider == "watsonx":
         await _test_watsonx_completion_with_tools(api_key, llm_model, endpoint, project_id)
     elif provider == "ollama":
@@ -216,7 +220,7 @@ async def test_completion_with_tools(
         raise ValueError(f"Unknown provider: {provider}")
 
 
-async def test_embedding(
+async def _test_embedding(
     provider: str,
     api_key: str = None,
     embedding_model: str = None,
@@ -226,7 +230,7 @@ async def test_embedding(
     """Test embedding generation for the provider."""
 
     if provider == "openai":
-        await _test_openai_embedding(api_key, embedding_model)
+        await _test_openai_embedding(api_key, embedding_model, endpoint)
     elif provider == "watsonx":
         await _test_watsonx_embedding(api_key, embedding_model, endpoint, project_id)
     elif provider == "ollama":
@@ -236,7 +240,7 @@ async def test_embedding(
 
 
 # OpenAI validation functions
-async def _test_openai_lightweight_health(api_key: str) -> None:
+async def _test_openai_lightweight_health(api_key: str, endpoint: str) -> None:
     """Test OpenAI API key validity with lightweight check.
     
     Only checks if the API key is valid without consuming credits.
@@ -248,10 +252,12 @@ async def _test_openai_lightweight_health(api_key: str) -> None:
             "Content-Type": "application/json",
         }
 
+        url = f"{endpoint}/v1/models"
+        logger.info("Testing openai lightweight health", url=url)
         async with httpx.AsyncClient() as client:
             # Use /v1/models endpoint which validates the key without consuming credits
             response = await client.get(
-                "https://api.openai.com/v1/models",
+                url=url,
                 headers=headers,
                 timeout=10.0,  # Short timeout for lightweight check
             )
@@ -271,7 +277,7 @@ async def _test_openai_lightweight_health(api_key: str) -> None:
         raise
 
 
-async def _test_openai_completion_with_tools(api_key: str, llm_model: str) -> None:
+async def _test_openai_completion_with_tools(api_key: str, llm_model: str, endpoint: str) -> None:
     """Test OpenAI completion with tool calling."""
     try:
         headers = {
@@ -309,8 +315,10 @@ async def _test_openai_completion_with_tools(api_key: str, llm_model: str) -> No
         async with httpx.AsyncClient() as client:
             # Try with max_tokens first
             payload = {**base_payload, "max_tokens": 50}
+            url = f"{endpoint}/v1/chat/completions"
+            logger.info("Test openai completion tools", url=url)
             response = await client.post(
-                "https://api.openai.com/v1/chat/completions",
+                url=url,
                 headers=headers,
                 json=payload,
                 timeout=30.0,
@@ -320,8 +328,9 @@ async def _test_openai_completion_with_tools(api_key: str, llm_model: str) -> No
             if response.status_code != 200:
                 logger.info("max_tokens parameter failed, trying max_completion_tokens instead")
                 payload = {**base_payload, "max_completion_tokens": 50}
+                logger.info("Test openai completion tools", url=url)
                 response = await client.post(
-                    "https://api.openai.com/v1/chat/completions",
+                    url=url,
                     headers=headers,
                     json=payload,
                     timeout=30.0,
@@ -342,7 +351,7 @@ async def _test_openai_completion_with_tools(api_key: str, llm_model: str) -> No
         raise
 
 
-async def _test_openai_embedding(api_key: str, embedding_model: str) -> None:
+async def _test_openai_embedding(api_key: str, embedding_model: str, endpoint: str) -> None:
     """Test OpenAI embedding generation."""
     try:
         headers = {
@@ -356,8 +365,9 @@ async def _test_openai_embedding(api_key: str, embedding_model: str) -> None:
         }
 
         async with httpx.AsyncClient() as client:
+            url = f"{endpoint}/v1/embeddings"
             response = await client.post(
-                "https://api.openai.com/v1/embeddings",
+                url=url,
                 headers=headers,
                 json=payload,
                 timeout=30.0,

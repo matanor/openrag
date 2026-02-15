@@ -2,6 +2,7 @@ import json
 import platform
 import time
 from starlette.responses import JSONResponse
+
 from utils.container_utils import transform_localhost_url
 from utils.logging_config import get_logger
 from utils.telemetry import TelemetryClient, Category, MessageId
@@ -191,6 +192,48 @@ async def get_settings(request, session_manager):
             {"error": f"Failed to retrieve settings: {str(e)}"}, status_code=500
         )
 
+async def validate_enum_str(
+    body: dict,
+    field_name: str,
+    allowed_values: list[str],
+) -> JSONResponse | None:
+    """
+    Validate that body[field_name], if present, is:
+      - a string,
+      - non-empty after stripping whitespace,
+      - and one of the allowed_values.
+
+    """
+    # If not provided, no validation needed
+    if field_name not in body:
+        return None
+
+    value = body[field_name]
+
+    # Must be a string
+    if not isinstance(value, str):
+        return JSONResponse(
+            {"error": f"{field_name} must be a string"},
+            status_code=400,
+        )
+
+    # Must be non-empty after trimming
+    trimmed = value.strip()
+    if not trimmed:
+        return JSONResponse(
+            {"error": f"{field_name} must be a non-empty string"},
+            status_code=400,
+        )
+
+    # Must be among allowed values
+    if trimmed not in allowed_values:
+        allowed_str = ", ".join(allowed_values)
+        return JSONResponse(
+            {"error": f"{field_name} must be one of: {allowed_str}"},
+            status_code=400,
+        )
+
+    return None
 
 async def update_settings(request, session_manager):
     """Update application settings"""
@@ -217,6 +260,8 @@ async def update_settings(request, session_manager):
             "system_prompt",
             "chunk_size",
             "chunk_overlap",
+            "splitter_type",
+            "use_document_title",
             "table_structure",
             "ocr",
             "picture_descriptions",
@@ -480,6 +525,19 @@ async def update_settings(request, session_manager):
                 Category.SETTINGS_OPERATIONS, 
                 MessageId.ORB_SETTINGS_EMBED_MODEL
             )
+
+            # Also update the ingest flow with a new model id
+            try:
+                flows_service = _get_flows_service()
+                await flows_service.update_ingest_flow_model_id_in_text_splitter(model_id=new_embedding_model)
+                logger.info(
+                    f"Successfully updated ingest flow model id in text splitter to {new_embedding_model}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to update ingest flow model id in text splitter: {str(e)}")
+                # Don't fail the entire settings update if flow update fails
+                # The config will still be saved
+
             logger.info(f"Embedding model changed from {old_model} to {new_embedding_model}")
 
         if "embedding_provider" in body:
@@ -536,6 +594,48 @@ async def update_settings(request, session_manager):
                 await _update_langflow_docling_settings(current_config, flows_service)
             except Exception as e:
                 logger.error(f"Failed to update docling settings in flow: {str(e)}")
+
+        if "splitter_type" in body:
+            new_splitter_type = body["splitter_type"]
+            current_config.knowledge.splitter_type = new_splitter_type
+            config_updated = True
+            await TelemetryClient.send_event(
+                Category.SETTINGS_OPERATIONS,
+                MessageId.ORB_SETTINGS_CHUNK_UPDATED
+            )
+
+            # Also update the ingest flow with the new splitter type
+            try:
+                flows_service = _get_flows_service()
+                await flows_service.update_ingest_flow_splitter_type(new_splitter_type)
+                logger.info(
+                    f"Successfully updated ingest flow splitter type to {new_splitter_type}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to update ingest flow splitter type: {str(e)}")
+                # Don't fail the entire settings update if flow update fails
+                # The config will still be saved
+
+        if "use_document_title" in body:
+            new_use_document_title = body["use_document_title"]
+            current_config.knowledge.use_document_title = new_use_document_title
+            config_updated = True
+            await TelemetryClient.send_event(
+                Category.SETTINGS_OPERATIONS,
+                MessageId.ORB_SETTINGS_CHUNK_UPDATED
+            )
+
+            # Also update the ingest flow with the new splitter type
+            try:
+                flows_service = _get_flows_service()
+                await flows_service.update_ingest_flow_use_document_title(new_use_document_title)
+                logger.info(
+                    f"Successfully updated ingest flow use_document_title to {new_use_document_title}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to update ingest flow use_document_title do: {str(e)}")
+                # Don't fail the entire settings update if flow update fails
+                # The config will still be saved
 
         if "chunk_size" in body:
             current_config.knowledge.chunk_size = body["chunk_size"]
@@ -731,6 +831,7 @@ async def onboarding(request, flows_service, session_manager=None):
             "llm_model",
             "embedding_provider",
             "embedding_model",
+            "delete_existing_index",
             # Provider-specific fields
             "openai_api_key",
             "anthropic_api_key",
@@ -743,9 +844,11 @@ async def onboarding(request, flows_service, session_manager=None):
         # Check for invalid fields
         invalid_fields = set(body.keys()) - allowed_fields
         if invalid_fields:
+            error_message = f"Invalid fields: {', '.join(invalid_fields)}. Allowed fields: {', '.join(allowed_fields)}"
+            logger.error(error_message)
             return JSONResponse(
                 {
-                    "error": f"Invalid fields: {', '.join(invalid_fields)}. Allowed fields: {', '.join(allowed_fields)}"
+                    "error": error_message
                 },
                 status_code=400,
             )
@@ -1012,10 +1115,26 @@ async def onboarding(request, flows_service, session_manager=None):
                 # Import here to avoid circular imports
                 from main import init_index
 
+                # Handle delete_existing_index
+                delete_existing_index = False
+                if "delete_existing_index" in body:
+                    delete_existing_index = body["delete_existing_index"]
+                    if not isinstance(delete_existing_index, bool):
+                        return JSONResponse(
+                            {"error": "delete_existing_index must be a boolean value"}, status_code=400
+                        )
+                    if delete_existing_index:
+                        await TelemetryClient.send_event(
+                            Category.ONBOARDING,
+                            MessageId.ORB_ONBOARD_DELETE_EXISTING_INDEX
+                        )
+                        logger.info("Delete existing index requested during onboarding")
+
                 logger.info(
-                    "Initializing OpenSearch index after onboarding configuration"
+                    f"Initializing OpenSearch index after onboarding configuration (delete_existing_index={delete_existing_index})",
                 )
-                await init_index()
+                await init_index(delete_existing=delete_existing_index)
+
                 logger.info("OpenSearch index initialization completed successfully")
             except Exception as e:
                 logger.error(

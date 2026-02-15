@@ -14,6 +14,7 @@ logger = get_logger(__name__)
 class OpenAIConfig:
     """OpenAI provider configuration."""
     api_key: str = ""
+    endpoint: str = ""
     configured: bool = False
 
 
@@ -71,6 +72,7 @@ class KnowledgeConfig:
     embedding_provider: str = "openai"  # Which provider to use for embeddings
     chunk_size: int = 1000
     chunk_overlap: int = 200
+    splitter_type: str = "CharacterTextSplitter"
     table_structure: bool = True
     ocr: bool = False
     picture_descriptions: bool = False
@@ -224,6 +226,8 @@ class ConfigManager:
         # OpenAI provider settings
         if os.getenv("OPENAI_API_KEY"):
             config_data["providers"]["openai"]["api_key"] = os.getenv("OPENAI_API_KEY")
+        if os.getenv("OPENAI_API_BASE"):
+            config_data["providers"]["openai"]["endpoint"] = os.getenv("OPENAI_API_BASE")
 
         # Anthropic provider settings
         if os.getenv("ANTHROPIC_API_KEY"):

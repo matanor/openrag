@@ -1,3 +1,5 @@
+import os
+
 from starlette.responses import JSONResponse
 from utils.logging_config import get_logger
 from config.settings import get_openrag_config
@@ -10,9 +12,11 @@ async def get_openai_models(request, models_service, session_manager):
     try:
         # Get API key from request body
         api_key = None
+        api_base = None
         try:
             body = await request.json()
             api_key = body.get("api_key") if body else None
+            api_base = body.get("api_base") if body else None
         except Exception:
             # Body might be empty or invalid JSON, continue to fallback
             pass
@@ -36,7 +40,24 @@ async def get_openai_models(request, models_service, session_manager):
                 status_code=400,
             )
 
-        models = await models_service.get_openai_models(api_key=api_key)
+        if not api_base:
+            try:
+                config = get_openrag_config()
+                api_base = config.providers.openai.endpoint
+                logger.info(
+                    f"Retrieved OpenAI API base from config: {'yes' if api_base else 'no'}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to get config: {e}")
+        if not api_base:
+            return JSONResponse(
+                {
+                    "error": "OpenAI API base is required either in request body or in configuration"
+                },
+                status_code=400,
+            )
+
+        models = await models_service.get_openai_models(api_key=api_key, api_base=api_base)
         return JSONResponse(models)
     except Exception as e:
         logger.error(f"Failed to get OpenAI models: {str(e)}")

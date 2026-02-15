@@ -953,6 +953,39 @@ class FlowsService:
             node_display_name="Split Text",
         )
 
+    async def update_ingest_flow_splitter_type(self, splitter_type: str):
+        """Helper function to update splitter type in the ingest flow"""
+        if not LANGFLOW_INGEST_FLOW_ID:
+            raise ValueError("LANGFLOW_INGEST_FLOW_ID is not configured")
+        await self._update_flow_field(
+            LANGFLOW_INGEST_FLOW_ID,
+            "splitter_type",
+            splitter_type,
+            node_display_name="Split Text",
+        )
+
+    async def update_ingest_flow_use_document_title(self, use_document_title: bool):
+        """Helper function to update splitter type in the ingest flow"""
+        if not LANGFLOW_INGEST_FLOW_ID:
+            raise ValueError("LANGFLOW_INGEST_FLOW_ID is not configured")
+        await self._update_flow_field(
+            LANGFLOW_INGEST_FLOW_ID,
+            "use_document_title",
+            str(use_document_title),
+            node_display_name="Split Text",
+        )
+
+    async def update_ingest_flow_model_id_in_text_splitter(self, model_id: str):
+        """Helper function to update splitter type in the ingest flow"""
+        if not LANGFLOW_INGEST_FLOW_ID:
+            raise ValueError("LANGFLOW_INGEST_FLOW_ID is not configured")
+        await self._update_flow_field(
+            LANGFLOW_INGEST_FLOW_ID,
+            "model_id",
+            model_id,
+            node_display_name="Split Text",
+        )
+
     async def update_ingest_flow_embedding_model(self, embedding_model: str, provider: str):
         """Helper function to update embedding model in the ingest flow"""
         if not LANGFLOW_INGEST_FLOW_ID:
@@ -1393,10 +1426,16 @@ class FlowsService:
             template["api_key"]["advanced"] = False
             updated = True
         if provider == "openai" and "api_base" in template:
-            template["api_base"]["value"] = ""
-            template["api_base"]["load_from_db"] = False
+            template["api_base"]["value"] = "OPENAI_API_BASE"
+            template["api_base"]["load_from_db"] = True
             template["api_base"]["show"] = True
             template["api_base"]["advanced"] = False
+            updated = True
+        if provider == "openai" and "openai_api_base" in template:
+            template["openai_api_base"]["value"] = "OPENAI_API_BASE"
+            template["openai_api_base"]["load_from_db"] = True
+            template["openai_api_base"]["show"] = True
+            template["openai_api_base"]["advanced"] = False
             updated = True
 
         if provider == "anthropic" and "api_key" in template:
