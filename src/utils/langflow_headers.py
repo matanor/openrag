@@ -73,5 +73,9 @@ def build_mcp_global_vars_from_config(config) -> Dict[str, str]:
     if config.knowledge.embedding_model:
         global_vars["SELECTED_EMBEDDING_MODEL"] = config.knowledge.embedding_model
     
+    # Add selected chunk size
+    if config.knowledge.chunk_size:
+        global_vars["SELECTED_CHUNK_SIZE"] = str(config.knowledge.chunk_size)
+    
     return global_vars
 

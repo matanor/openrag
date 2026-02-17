@@ -1388,6 +1388,14 @@ async def _update_langflow_global_variables(config):
                 f"Set SELECTED_EMBEDDING_MODEL global variable to {config.knowledge.embedding_model}"
             )
 
+        if config.knowledge.chunk_size:
+            await clients._create_langflow_global_variable(
+                "SELECTED_CHUNK_SIZE", str(config.knowledge.chunk_size), modify=True
+            )
+            logger.info(
+                f"Set SELECTED_CHUNK_SIZE global variable to {config.knowledge.chunk_size}"
+            )
+
     except Exception as e:
         logger.error(f"Failed to update Langflow global variables: {str(e)}")
         raise
