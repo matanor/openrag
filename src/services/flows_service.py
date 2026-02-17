@@ -931,23 +931,6 @@ class FlowsService:
         await self._update_flow_field(LANGFLOW_INGEST_FLOW_ID, "docling_serve_opts", preset_config,
                                 node_display_name=DOCLING_COMPONENT_DISPLAY_NAME)
 
-    async def update_flows_index_name(self, index_name: str):
-        """Helper function to update index name in the ingest flow"""
-        if not LANGFLOW_INGEST_FLOW_ID:
-            raise ValueError("LANGFLOW_INGEST_FLOW_ID is not configured")
-        await self._update_flow_field(
-            LANGFLOW_INGEST_FLOW_ID,
-            "index_name",
-            index_name,
-            node_display_name="OpenSearch (Multi-Model Multi-Embedding)",
-        )
-        await self._update_flow_field(
-            LANGFLOW_CHAT_FLOW_ID,
-            "index_name",
-            index_name,
-            node_display_name="OpenSearch (Multi-Model Multi-Embedding)",
-        )
-
     async def update_ingest_flow_chunk_size(self, chunk_size: int):
         """Helper function to update chunk size in the ingest flow"""
         if not LANGFLOW_INGEST_FLOW_ID:

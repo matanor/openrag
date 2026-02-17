@@ -8,12 +8,14 @@ from utils.logging_config import get_logger
 from utils.telemetry import TelemetryClient, Category, MessageId
 from config.settings import (
     DISABLE_INGEST_WITH_LANGFLOW,
+    INGEST_SAMPLE_DATA,
     LANGFLOW_URL,
     LANGFLOW_CHAT_FLOW_ID,
     LANGFLOW_INGEST_FLOW_ID,
     LANGFLOW_PUBLIC_URL,
     LOCALHOST_URL,
     clients,
+    get_index_name,
     get_openrag_config,
     config_manager,
     is_no_auth_mode,
@@ -106,6 +108,7 @@ async def get_settings(request, session_manager):
                 "table_structure": knowledge_config.table_structure,
                 "ocr": knowledge_config.ocr,
                 "picture_descriptions": knowledge_config.picture_descriptions,
+                "index_name": knowledge_config.index_name,
             },
             "agent": {
                 "llm_model": agent_config.llm_model,
@@ -255,7 +258,6 @@ async def update_settings(request, session_manager):
             "llm_model",
             "llm_provider",
             "system_prompt",
-            "index_name",
             "chunk_size",
             "chunk_overlap",
             "splitter_type",
@@ -265,6 +267,7 @@ async def update_settings(request, session_manager):
             "picture_descriptions",
             "embedding_model",
             "embedding_provider",
+            "index_name",
             # Provider-specific fields (structured as provider_name.field_name)
             "openai_api_key",
             "anthropic_api_key",
@@ -324,21 +327,46 @@ async def update_settings(request, session_manager):
                     status_code=400,
                 )
 
-        response = await validate_enum_str(body, field_name="splitter_type",
-            allowed_values=[
-                "CharacterTextSplitter", "LineBasedTextSplitter", "TableAwareTextSplitter"
-            ]
-        )
-        if response:
-            return response
+        if "index_name" in body:
+            if (
+                not isinstance(body["index_name"], str)
+                or not body["index_name"].strip()
+            ):
+                return JSONResponse(
+                    {"error": "index_name must be a non-empty string"},
+                    status_code=400,
+                )
 
-        response = await validate_enum_str(body, field_name="llm_provider", allowed_values=["openai", "anthropic", "watsonx", "ollama"])
-        if response:
-            return response
+        if "llm_provider" in body:
+            if (
+                not isinstance(body["llm_provider"], str)
+                or not body["llm_provider"].strip()
+            ):
+                return JSONResponse(
+                    {"error": "llm_provider must be a non-empty string"},
+                    status_code=400,
+                )
+            if body["llm_provider"] not in ["openai", "anthropic", "watsonx", "ollama"]:
+                return JSONResponse(
+                    {"error": "llm_provider must be one of: openai, anthropic, watsonx, ollama"},
+                    status_code=400,
+                )
 
-        response = await validate_enum_str(body, field_name="embedding_provider", allowed_values=["openai", "watsonx", "ollama"])
-        if response:
-            return response
+        if "embedding_provider" in body:
+            if (
+                not isinstance(body["embedding_provider"], str)
+                or not body["embedding_provider"].strip()
+            ):
+                return JSONResponse(
+                    {"error": "embedding_provider must be a non-empty string"},
+                    status_code=400,
+                )
+            # Anthropic doesn't have embeddings
+            if body["embedding_provider"] not in ["openai", "watsonx", "ollama"]:
+                return JSONResponse(
+                    {"error": "embedding_provider must be one of: openai, watsonx, ollama"},
+                    status_code=400,
+                )
 
         # Validate provider-specific fields
         for key in ["openai_api_key", "anthropic_api_key", "watsonx_api_key"]:
@@ -567,29 +595,6 @@ async def update_settings(request, session_manager):
             except Exception as e:
                 logger.error(f"Failed to update docling settings in flow: {str(e)}")
 
-        if "index_name" in body:
-            import config.settings as settings
-            settings.INDEX_NAME = body["index_name"]
-            # also update ?
-            # current_config.knowledge.index_name =
-            config_updated = True
-            #await TelemetryClient.send_event(
-            #    Category.SETTINGS_OPERATIONS,
-            #    MessageId.ORB_SETTINGS_UPDATED
-            #)
-
-            # Also update the flows with the new index name
-            try:
-                flows_service = _get_flows_service()
-                await flows_service.update_flows_index_name(settings.INDEX_NAME)
-                logger.info(
-                    f"Successfully updated flows index name to '{settings.INDEX_NAME}'."
-                )
-            except Exception as e:
-                logger.error(f"Failed to update ingest flow index name: {str(e)}")
-                # Don't fail the entire settings update if flow update fails
-                # The config will still be saved
-
         if "splitter_type" in body:
             new_splitter_type = body["splitter_type"]
             current_config.knowledge.splitter_type = new_splitter_type
@@ -672,6 +677,27 @@ async def update_settings(request, session_manager):
             except Exception as e:
                 logger.error(f"Failed to update ingest flow chunk overlap: {str(e)}")
                 # Don't fail the entire settings update if flow update fails
+        if "index_name" in body:
+            old_index_name = current_config.knowledge.index_name
+            new_index_name = body["index_name"].strip()
+            current_config.knowledge.index_name = new_index_name
+            config_updated = True
+            await TelemetryClient.send_event(
+                Category.SETTINGS_OPERATIONS, 
+                MessageId.ORB_SETTINGS_INDEX_NAME_UPDATED
+            )
+            logger.info(f"Index name changed from {old_index_name} to {new_index_name}")
+
+            # Also update global variable with new index name
+            try:
+                await clients._create_langflow_global_variable("OPENSEARCH_INDEX_NAME", new_index_name, modify=True)
+                logger.info(
+                    f"Successfully updated global variable with new index name {new_index_name}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to update global variable with new index name: {str(e)}")
+                # Don't fail the entire settings update if flow update fails
+
                 # The config will still be saved
 
         # Update provider-specific settings
@@ -806,7 +832,6 @@ async def onboarding(request, flows_service, session_manager=None):
             "embedding_provider",
             "embedding_model",
             "delete_existing_index",
-            "sample_data",
             # Provider-specific fields
             "openai_api_key",
             "anthropic_api_key",
@@ -998,20 +1023,13 @@ async def onboarding(request, flows_service, session_manager=None):
                 current_config.providers.ollama.configured = True
                 logger.info("Marked Ollama as configured (chosen as embedding provider)")
 
-        # Handle sample_data
-        should_ingest_sample_data = False
-        if "sample_data" in body:
-            if not isinstance(body["sample_data"], bool):
-                return JSONResponse(
-                    {"error": "sample_data must be a boolean value"}, status_code=400
-                )
-            should_ingest_sample_data = body["sample_data"]
-            if should_ingest_sample_data:
-                await TelemetryClient.send_event(
-                    Category.ONBOARDING, 
-                    MessageId.ORB_ONBOARD_SAMPLE_DATA
-                )
-                logger.info("Sample data ingestion requested during onboarding")
+        should_ingest_sample_data = INGEST_SAMPLE_DATA
+        if should_ingest_sample_data:
+            await TelemetryClient.send_event(
+                Category.ONBOARDING, 
+                MessageId.ORB_ONBOARD_SAMPLE_DATA
+            )
+            logger.info("Sample data ingestion enabled via environment variable")
 
         if not config_updated:
             return JSONResponse(
@@ -1097,32 +1115,38 @@ async def onboarding(request, flows_service, session_manager=None):
                 # Import here to avoid circular imports
                 from main import init_index
 
-                delete_existing_index = body.get("delete_existing_index", False)
-                delete_existing_index = bool(delete_existing_index)
+                # Handle delete_existing_index
+                delete_existing_index = False
+                if "delete_existing_index" in body:
+                    delete_existing_index = body["delete_existing_index"]
+                    if not isinstance(delete_existing_index, bool):
+                        return JSONResponse(
+                            {"error": "delete_existing_index must be a boolean value"}, status_code=400
+                        )
+                    if delete_existing_index:
+                        await TelemetryClient.send_event(
+                            Category.ONBOARDING,
+                            MessageId.ORB_ONBOARD_DELETE_EXISTING_INDEX
+                        )
+                        logger.info("Delete existing index requested during onboarding")
+
                 logger.info(
                     f"Initializing OpenSearch index after onboarding configuration (delete_existing_index={delete_existing_index})",
                 )
                 await init_index(delete_existing=delete_existing_index)
+
                 logger.info("OpenSearch index initialization completed successfully")
             except Exception as e:
-                if isinstance(e, ValueError):
-                    logger.error(
-                        "Failed to initialize OpenSearch index after onboarding",
-                        error=str(e),
-                    )
-                    return JSONResponse(
-                        {
-                            "error": str(e),
-                            "edited": True,
-                        },
-                        status_code=400,
-                    )
                 logger.error(
                     "Failed to initialize OpenSearch index after onboarding",
                     error=str(e),
                 )
-                # Don't fail the entire onboarding process if index creation fails
-                # The application can still work, but document operations may fail
+                return JSONResponse(
+                    {
+                        "error": str(e),
+                    },
+                    status_code=500,
+                )
 
             # Handle sample data ingestion if requested
             if should_ingest_sample_data:
@@ -1149,12 +1173,14 @@ async def onboarding(request, flows_service, session_manager=None):
                     logger.error(
                         "Failed to complete sample data ingestion", error=str(e)
                     )
-                    # Don't fail the entire onboarding process if sample data fails
+                    
+                    return JSONResponse(
+                        {"error": f"Failed to ingest sample documents: {str(e)}"}, 
+                        status_code=500
+                    )
 
         if config_manager.save_config_file(current_config):
-            updated_fields = [
-                k for k in body.keys() if k != "sample_data"
-            ]  # Exclude sample_data from log
+            updated_fields = list(body.keys())
             logger.info(
                 "Onboarding configuration updated successfully",
                 updated_fields=updated_fields,
@@ -1604,17 +1630,9 @@ async def rollback_onboarding(request, session_manager, task_service):
 
         # Only allow rollback if config was marked as edited (onboarding completed)
         if not current_config.edited:
-            logger.info("No onboarding configuration to rollback")
             return JSONResponse(
                 {"error": "No onboarding configuration to rollback"}, status_code=400
             )
-
-        import config.settings as settings
-        if await clients.opensearch.indices.exists(index=settings.INDEX_NAME):
-            # DELETE /<index_name>
-            logger.info(f"Deleting index '{settings.INDEX_NAME}'...")
-            resp = await clients.opensearch.indices.delete(index=settings.INDEX_NAME)
-            logger.info(f"Deleted '{settings.INDEX_NAME}': {resp}")
 
         user = request.state.user
         jwt_token = session_manager.get_effective_jwt_token(user.user_id, request.state.jwt_token)
@@ -1661,12 +1679,12 @@ async def rollback_onboarding(request, session_manager, task_service):
                                     
                                     # Delete documents by filename
                                     from utils.opensearch_queries import build_filename_delete_body
-                                    import config.settings as settings
+                                    from config.settings import get_index_name
                                     
                                     delete_query = build_filename_delete_body(filename)
                                     
                                     result = await opensearch_client.delete_by_query(
-                                        index=settings.INDEX_NAME,
+                                        index=get_index_name(),
                                         body=delete_query,
                                         conflicts="proceed"
                                     )

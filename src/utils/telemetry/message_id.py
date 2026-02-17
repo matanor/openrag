@@ -176,6 +176,8 @@ class MessageId:
     ORB_SETTINGS_CHUNK_UPDATED = "ORB_SETTINGS_CHUNK_UPDATED"
     # Message: Docling settings updated
     ORB_SETTINGS_DOCLING_UPDATED = "ORB_SETTINGS_DOCLING_UPDATED"
+    # Message: Index name updated
+    ORB_SETTINGS_INDEX_NAME_UPDATED = "ORB_SETTINGS_INDEX_NAME_UPDATED"
     # Message: Provider credentials updated
     ORB_SETTINGS_PROVIDER_CREDS = "ORB_SETTINGS_PROVIDER_CREDS"
     
@@ -197,6 +199,8 @@ class MessageId:
     ORB_ONBOARD_EMBED_MODEL = "ORB_ONBOARD_EMBED_MODEL"
     # Message: Sample data ingestion requested
     ORB_ONBOARD_SAMPLE_DATA = "ORB_ONBOARD_SAMPLE_DATA"
+    # Message: Delete existing index requested
+    ORB_ONBOARD_DELETE_EXISTING_INDEX = "ORB_ONBOARD_DELETE_EXISTING_INDEX"
     # Message: Configuration marked as edited
     ORB_ONBOARD_CONFIG_EDITED = "ORB_ONBOARD_CONFIG_EDITED"
     # Message: Onboarding rolled back due to all files failing
