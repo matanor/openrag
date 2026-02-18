@@ -10,6 +10,13 @@ services:
     environment:
       - discovery.type=single-node
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_PASSWORD}
+      - "OPENSEARCH_JAVA_OPTS=-Xms2g -Xmx2g"
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+        reservations:
+          memory: 2g
     # Run security setup in background after OpenSearch starts
     command: >
       bash -c "
