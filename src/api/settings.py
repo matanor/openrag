@@ -105,6 +105,7 @@ async def get_settings(request, session_manager):
                 "embedding_provider": knowledge_config.embedding_provider,
                 "chunk_size": knowledge_config.chunk_size,
                 "chunk_overlap": knowledge_config.chunk_overlap,
+                "serialize_tables_as_markdown": knowledge_config.serialize_tables_as_markdown,
                 "table_structure": knowledge_config.table_structure,
                 "ocr": knowledge_config.ocr,
                 "picture_descriptions": knowledge_config.picture_descriptions,
@@ -262,6 +263,7 @@ async def update_settings(request, session_manager):
             "chunk_overlap",
             "splitter_type",
             "use_document_title",
+            "serialize_tables_as_markdown",
             "table_structure",
             "ocr",
             "picture_descriptions",
@@ -296,6 +298,12 @@ async def update_settings(request, session_manager):
                 return JSONResponse(
                     {"error": "embedding_model must be a non-empty string"},
                     status_code=400,
+                )
+
+        if "serialize_tables_as_markdown" in body:
+            if not isinstance(body["serialize_tables_as_markdown"], bool):
+                return JSONResponse(
+                    {"error": "serialize_tables_as_markdown must be a boolean"}, status_code=400
                 )
 
         if "table_structure" in body:
@@ -677,6 +685,14 @@ async def update_settings(request, session_manager):
             except Exception as e:
                 logger.error(f"Failed to update ingest flow chunk overlap: {str(e)}")
                 # Don't fail the entire settings update if flow update fails
+        
+        if "serialize_tables_as_markdown" in body:
+            current_config.knowledge.serialize_tables_as_markdown = body["serialize_tables_as_markdown"]
+            config_updated = True
+            logger.info(
+                f"Updated serialize_tables_as_markdown to {body['serialize_tables_as_markdown']}"
+            )
+        
         if "index_name" in body:
             old_index_name = current_config.knowledge.index_name
             new_index_name = body["index_name"].strip()
@@ -1395,6 +1411,13 @@ async def _update_langflow_global_variables(config):
             logger.info(
                 f"Set SELECTED_CHUNK_SIZE global variable to {config.knowledge.chunk_size}"
             )
+        
+        await clients._create_langflow_global_variable(
+            "SERIALIZE_TABLES_AS_MARKDOWN", str(config.knowledge.serialize_tables_as_markdown).lower(), modify=True
+        )
+        logger.info(
+            f"Set SERIALIZE_TABLES_AS_MARKDOWN global variable to {config.knowledge.serialize_tables_as_markdown}"
+        )
 
     except Exception as e:
         logger.error(f"Failed to update Langflow global variables: {str(e)}")

@@ -77,5 +77,8 @@ def build_mcp_global_vars_from_config(config) -> Dict[str, str]:
     if config.knowledge.chunk_size:
         global_vars["SELECTED_CHUNK_SIZE"] = str(config.knowledge.chunk_size)
     
+    # Add serialize tables as markdown flag
+    global_vars["SERIALIZE_TABLES_AS_MARKDOWN"] = str(config.knowledge.serialize_tables_as_markdown).lower()
+    
     return global_vars
 

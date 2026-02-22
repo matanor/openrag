@@ -163,6 +163,7 @@ class LangflowFileService:
             "X-Langflow-Global-Var-FILESIZE": str(file_size_bytes),
             "X-Langflow-Global-Var-SELECTED_EMBEDDING_MODEL": str(embedding_model),
             "X-Langflow-Global-Var-SELECTED_CHUNK_SIZE": str(config.knowledge.chunk_size),
+            "X-Langflow-Global-Var-SERIALIZE_TABLES_AS_MARKDOWN": str(config.knowledge.serialize_tables_as_markdown).lower(),
             "X-Langflow-Global-Var-DOCUMENT_ID": str(document_id) if document_id else "",
             "X-Langflow-Global-Var-SOURCE_URL": str(source_url) if source_url else "",
         }

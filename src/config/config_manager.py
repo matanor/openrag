@@ -73,6 +73,7 @@ class KnowledgeConfig:
     chunk_size: int = 1000
     chunk_overlap: int = 200
     splitter_type: str = "CharacterTextSplitter"
+    serialize_tables_as_markdown: bool = True
     table_structure: bool = True
     ocr: bool = False
     picture_descriptions: bool = False

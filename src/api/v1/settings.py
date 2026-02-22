@@ -50,6 +50,7 @@ async def get_settings_endpoint(request: Request):
                 "embedding_model": config.knowledge.embedding_model,
                 "chunk_size": config.knowledge.chunk_size,
                 "chunk_overlap": config.knowledge.chunk_overlap,
+                "serialize_tables_as_markdown": config.knowledge.serialize_tables_as_markdown,
                 "table_structure": config.knowledge.table_structure,
                 "ocr": config.knowledge.ocr,
                 "picture_descriptions": config.knowledge.picture_descriptions,

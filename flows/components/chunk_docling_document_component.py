@@ -5,7 +5,7 @@ import tiktoken
 from docling_core.transforms.chunker import BaseChunker, DocMeta
 from docling_core.transforms.chunker.hierarchical_chunker import HierarchicalChunker
 from docling_core.transforms.serializer.markdown import MarkdownParams, MarkdownTableSerializer, MarkdownDocSerializer
-from docling_core.transforms.serializer.base import BaseDocSerializer, BaseSerializerProvider
+from docling_core.transforms.serializer.base import BaseDocSerializer, BaseSerializerProvider, BaseTableSerializer
 from docling_core.types.doc.base import ImageRefMode
 from docling_core.types.doc.document import DoclingDocument
 
@@ -94,6 +94,15 @@ class ChunkDoclingDocumentComponent(Component):
             display_name="Always emit headings",
             info="Emit headings even for empty sections.",
             value=False,
+            show=True,
+            advanced=True,
+            dynamic=True,
+        ),
+        StrInput(
+            name="serialize_tables_as_markdown",
+            display_name="Serialize tables as markdown",
+            info="Use markdown serialization for tables in chunks.",
+            value="true",
             show=True,
             advanced=True,
             dynamic=True,
@@ -187,12 +196,23 @@ class ChunkDoclingDocumentComponent(Component):
                 tokenizer = OpenAITokenizer(
                     tokenizer=tiktoken.encoding_for_model(self.openai_model_name), max_tokens=max_tokens
                 )
-            chunker = HybridChunker(
-                tokenizer=tokenizer,
-                merge_peers=bool(self.merge_peers),
-                always_emit_headings=bool(self.always_emit_headings),
-                serializer_provider=ChunkingSerializerProviderWithMarkdownTables(),
-            )
+        
+            chunker_kwargs = {
+                "tokenizer": tokenizer,
+                "merge_peers": bool(self.merge_peers),
+                "always_emit_headings": bool(self.always_emit_headings),
+            }
+            # Conditionally add serializer_provider based on flag
+            # Convert string value to boolean (handles env variable values)
+            serialize_tables = str(self.serialize_tables_as_markdown).lower() == "true"
+            if serialize_tables:
+                chunker_kwargs["serializer_provider"] = ChunkingSerializerProviderWithMarkdownTables()
+                logger.info("Using ChunkingSerializerProviderWithMarkdownTables for table serialization")
+            else:
+                logger.info("Using default serializer (no markdown table serialization)")
+            
+            logger.info(f"Creating a hybrid chunker with arguments: {chunker_kwargs}")
+            chunker = HybridChunker(**chunker_kwargs)
         elif self.chunker == "HierarchicalChunker":
             chunker = HierarchicalChunker()
 
@@ -222,7 +242,7 @@ class ChunkDoclingDocumentComponent(Component):
 class ChunkingDocSerializerWithMarkdownTables(MarkdownDocSerializer):
     """Doc serializer used for chunking purposes. Uses markdown to serialize tables"""
 
-    table_serializer = MarkdownTableSerializer()
+    table_serializer: BaseTableSerializer = MarkdownTableSerializer()
     params: MarkdownParams = MarkdownParams(
         image_mode=ImageRefMode.PLACEHOLDER,
         image_placeholder="",
