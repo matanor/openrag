@@ -1064,17 +1064,25 @@ class OpenSearchVectorStoreComponentMultimodalMultiEmbedding(LCVectorStoreCompon
         else:
             # Parallel processing for non-IBM models
             max_workers = min(max(len(texts), 1), 8)
-            logger.debug(f"Using parallel processing with {max_workers} workers")
+            logger.info(f"Starting embedding of {len(texts)} texts.. (max_workers: {max_workers})")
+            logger.info(f"selected_embedding = {selected_embedding}")
 
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {executor.submit(embed_chunk_with_retry, chunk, idx): idx for idx, chunk in enumerate(texts)}
+                num_completed = 0
                 for future in as_completed(futures):
                     idx = futures[future]
                     vectors[idx] = future.result()
+                    num_completed += 1
+                    if num_completed % 10 == 0:
+                        logger.info(f"Completed {num_completed}/{len(texts)} embeddings.")
 
         if not vectors:
             self.log(f"No vectors generated from documents for model {embedding_model}.")
             return
+
+        logger.info(f"Successfully embedded texts to {len(vectors)} vectors.")
+
 
         # Get vector dimension for mapping
         dim = len(vectors[0]) if vectors else 768  # default fallback
