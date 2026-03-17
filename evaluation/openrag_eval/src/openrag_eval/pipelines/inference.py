@@ -36,9 +36,6 @@ class OpenRAGInferenceParams(InferenceParams):
     generative_model: GenerativeModelParams = Field(
         description="Generative model configuration"
     )
-    batch_size: int = Field(
-        default=5, description="Number of parallel inference requests"
-    )
     timeout: float = Field(
         default=300.0,
         description="HTTP request timeout in seconds (default: 5 minutes)",
@@ -255,6 +252,3 @@ class OpenRAGInference(InferencePipeline):
         error_msg = f"Cannot run inference on question '{question}' after {max_retries} attempts. See log for details."
         logger.error(error_msg)
         raise RuntimeError(error_msg)
-
-
-# Made with Bob
