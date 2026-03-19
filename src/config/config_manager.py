@@ -38,6 +38,7 @@ class WatsonXConfig:
 class OllamaConfig:
     """Ollama provider configuration."""
     endpoint: str = ""
+    resolved_endpoint: str = ""
     configured: bool = False
 
 
@@ -98,6 +99,8 @@ class OnboardingState:
     upload_steps: Optional[Dict[str, Any]] = field(default=None)
     openrag_docs_filter_id: Optional[str] = field(default=None)
     user_doc_filter_id: Optional[str] = field(default=None)
+    openrag_docs_ingested_version: Optional[str] = field(default=None)
+    openrag_docs_remote_signature: Optional[str] = field(default=None)
 
 
 @dataclass
@@ -314,7 +317,7 @@ class ConfigManager:
             return True
         except Exception as e:
             logger.error(f"Failed to save configuration to {self.config_file}: {e}")
-            return False
+            raise e
 
     def update_onboarding_state(self, **kwargs) -> bool:
         """Update onboarding state fields.
