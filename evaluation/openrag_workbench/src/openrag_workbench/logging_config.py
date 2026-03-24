@@ -17,7 +17,7 @@ def init_logger() -> None:
     """Initialize logging configuration with custom format."""
     handler = logging.StreamHandler()
     handler.setFormatter(
-        ShortNameFormatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+        ShortNameFormatter("%(asctime)s [%(levelname)s] %(name)s:%(lineno)d: %(message)s")
     )
 
     logging.basicConfig(
