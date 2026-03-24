@@ -123,10 +123,37 @@ class OpenRAGIngest(IngestPipeline):
             settings_dict["chunk_overlap"] = self.params.chunking.chunk_overlap
 
         # Use SDK to update settings
+        logger.info(f"Updating settings to: {settings_dict}")
         options = SettingsUpdateOptions(**settings_dict)
-        logger.info(f"Updating settings to {options}..")
         await sdk_client.settings.update(options)
         logger.info("Settings update completed.")
+
+        # Verify settings were applied correctly
+        logger.info("Verifying settings were applied correctly...")
+        current_settings = await sdk_client.settings.get()
+        
+        # Check each setting that was sent
+        # All settings are in the knowledge section, except index_name which isn't returned
+        mismatches = []
+        for key, expected_value in settings_dict.items():
+            if key == "index_name":
+                # index_name is not returned by the settings endpoint, skip verification
+                logger.info(f"Skipping verification for index_name (not returned by settings endpoint)")
+                continue
+            
+            # All other fields are in the knowledge section
+            actual_value = getattr(current_settings.knowledge, key, None)
+            if actual_value != expected_value:
+                mismatches.append(
+                    f"{key}: expected={expected_value}, actual={actual_value}"
+                )
+        
+        if mismatches:
+            error_msg = f"Settings verification failed. Mismatches: {', '.join(mismatches)}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        logger.info("Settings verification successful - all values match.")
 
     async def _onboard(self, sdk_client: OpenRAGClient) -> None:
         """Onboard with embedding model configuration using SDK.
