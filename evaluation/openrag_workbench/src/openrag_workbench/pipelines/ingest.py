@@ -37,8 +37,8 @@ class OpenRAGIngestParams(IngestParams):
     embedding_model: EmbeddingModelParams = Field(
         description="Embedding model configuration"
     )
-    chunking: ChunkingParams | None = Field(
-        default=None, description="Chunking configuration"
+    chunking: ChunkingParams = Field(
+        default_factory=ChunkingParams, description="Chunking configuration"
     )
     timeout: float = Field(
         default=300.0,
@@ -118,9 +118,8 @@ class OpenRAGIngest(IngestPipeline):
             "index_name": index_name,
         }
 
-        if self.params.chunking:
-            settings_dict["chunk_size"] = self.params.chunking.chunk_size
-            settings_dict["chunk_overlap"] = self.params.chunking.chunk_overlap
+        settings_dict["chunk_size"] = self.params.chunking.chunk_size
+        settings_dict["chunk_overlap"] = self.params.chunking.chunk_overlap
 
         # Use SDK to update settings
         logger.info(f"Updating settings to: {settings_dict}")
@@ -278,9 +277,7 @@ class OpenRAGIngest(IngestPipeline):
         file_names = [document.name for document in rag_corpus.documents]
         file_names_sorted = sorted(file_names)
 
-        chunking_dump = ""
-        if self.params.chunking:
-            chunking_dump = self.params.chunking.model_dump_json()
+        chunking_dump = self.params.chunking.model_dump_json()
 
         index_config = {
             "chunking": chunking_dump,
