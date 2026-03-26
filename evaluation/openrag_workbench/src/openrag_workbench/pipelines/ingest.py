@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import time
 from typing import Any, cast
 
 from openrag_sdk import OpenRAGClient
@@ -231,6 +232,7 @@ class OpenRAGIngest(IngestPipeline):
             logger.info(
                 f"Ingesting document {i}/{num_documents_to_index}: {document.name}"
             )
+            start_time = time.time()
             try:
                 # Reset stream position before ingestion
                 document.stream.seek(0)
@@ -250,21 +252,27 @@ class OpenRAGIngest(IngestPipeline):
                 # Cast to IngestTaskStatus since wait=True
                 task_status = cast(IngestTaskStatus, result)
 
+                # Calculate elapsed time
+                elapsed_time = time.time() - start_time
+
                 # Check if ingestion was successful
                 if task_status.status == "failed" or task_status.failed_files > 0:
                     logger.error(
                         f"Failed to ingest {document.name}: "
                         f"status={task_status.status}, "
-                        f"failed_files={task_status.failed_files}/{task_status.total_files}"
+                        f"failed_files={task_status.failed_files}/{task_status.total_files}, "
+                        f"time={elapsed_time:.2f}s"
                     )
                     num_failures += 1
                 else:
                     logger.info(
                         f"Successfully ingested {document.name}: "
-                        f"processed={task_status.processed_files}/{task_status.total_files}"
+                        f"processed={task_status.processed_files}/{task_status.total_files}, "
+                        f"time={elapsed_time:.2f}s"
                     )
             except Exception as e:
-                logger.error(f"Error ingesting {document.name}: {e}")
+                elapsed_time = time.time() - start_time
+                logger.error(f"Error ingesting {document.name}: {e}, time={elapsed_time:.2f}s")
                 num_failures += 1
 
         return num_failures
