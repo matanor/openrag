@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from ragworkbench.api.inference import InferenceParams, InferencePipeline
 from ragworkbench.api.inference_result import InferenceResult, Trajectory
 from ragworkbench.api.ingest_artifact import IngestArtifact
+from ragworkbench.boards.board_model import CacheMode
 from ragworkbench.boards.board_registry import inference_pipeline
 from ragworkbench.datasets_loader.data_models import RagBenchmarkEntry
 
@@ -50,6 +51,7 @@ class OpenRAGInference(InferencePipeline):
         self,
         params: OpenRAGInferenceParams,
         cache_dir: str | None = None,
+        cache_mode: CacheMode = CacheMode.ON,
     ) -> None:
         """
         Initialize OpenRAG inference pipeline.
@@ -57,8 +59,9 @@ class OpenRAGInference(InferencePipeline):
         Args:
             params: OpenRAG inference parameters
             cache_dir: Optional directory for caching generation results
+            cache_mode: Cache operation mode (on/off/refresh)
         """
-        super().__init__(params, cache_dir=cache_dir)
+        super().__init__(params, cache_dir=cache_dir, cache_mode=cache_mode)
         self.params: OpenRAGInferenceParams = params
         self._ingest_artifact: OpenRAGIngestArtifact | None = None
 
@@ -138,11 +141,19 @@ class OpenRAGInference(InferencePipeline):
 
         # Use SDK client for LLM configuration and index_name (URL from environment)
         async with OpenRAGClient(timeout=self.params.timeout) as sdk_client:
-            settings_options = SettingsUpdateOptions(
-                llm_provider=self.params.generative_model.provider_id,
-                llm_model=self.params.generative_model.model_id,
-                index_name=artifact.index_name,
-            )
+            settings_dict = {
+                "llm_provider": self.params.generative_model.provider_id,
+                "llm_model": self.params.generative_model.model_id,
+                "index_name": artifact.index_name,
+            }
+            
+            # Add tracking API key if provided (for cost tracking)
+            if self.params.tracking_api_key:
+                settings_dict["openai_api_key"] = self.params.tracking_api_key
+                logger.info("Set tracking API key for cost tracking")
+            
+            logger.info(f"Updating settings with: {settings_dict}")
+            settings_options = SettingsUpdateOptions(**settings_dict)
             await sdk_client.settings.update(settings_options)
 
             # Get updated settings to verify

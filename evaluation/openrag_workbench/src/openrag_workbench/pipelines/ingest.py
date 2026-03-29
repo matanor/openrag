@@ -112,15 +112,17 @@ class OpenRAGIngest(IngestPipeline):
         """Update OpenRAG settings with chunking and index configuration using SDK."""
         logger.info(f"Updating settings for index: '{index_name}'")
 
-        # Build settings update options
         settings_dict: dict[str, Any] = {
             "embedding_provider": self.params.embedding_model.provider_id,
             "embedding_model": self.params.embedding_model.model_id,
             "index_name": index_name,
+            "chunk_size": self.params.chunking.chunk_size,
+            "chunk_overlap": self.params.chunking.chunk_overlap,
         }
 
-        settings_dict["chunk_size"] = self.params.chunking.chunk_size
-        settings_dict["chunk_overlap"] = self.params.chunking.chunk_overlap
+        # Add API key if available
+        if self._params.tracking_api_key:
+            settings_dict["openai_api_key"] = self._params.tracking_api_key
 
         # Use SDK to update settings
         logger.info(f"Updating settings to: {settings_dict}")
@@ -136,9 +138,8 @@ class OpenRAGIngest(IngestPipeline):
         # All settings are in the knowledge section, except index_name which isn't returned
         mismatches = []
         for key, expected_value in settings_dict.items():
-            if key == "index_name":
-                # index_name is not returned by the settings endpoint, skip verification
-                logger.info(f"Skipping verification for index_name (not returned by settings endpoint)")
+            if key in ("index_name", "openai_api_key"):
+                # index_name and openai_api_key are not returned by the settings endpoint, skip verification
                 continue
             
             # All other fields are in the knowledge section
