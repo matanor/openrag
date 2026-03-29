@@ -26,7 +26,14 @@ async def onboard_system():
 
     This ensures the OpenRAG config is marked as edited and properly initialized
     so that tests can use the /settings endpoint.
+
+    Skips in-process backend setup when SDK_TESTS_ONLY=true (SDK tests talk to
+    an already-running external stack and must not wipe its state).
     """
+    if os.environ.get("SDK_TESTS_ONLY") == "true":
+        yield
+        return
+
     from pathlib import Path
     import shutil
 
@@ -34,7 +41,7 @@ async def onboard_system():
     config_file = Path("config/config.yaml")
     if config_file.exists():
         config_file.unlink()
-    
+
     # Clean up OpenSearch data directory to ensure fresh state for tests
     opensearch_data_path = Path(os.getenv("OPENSEARCH_DATA_PATH", "./opensearch-data"))
     if opensearch_data_path.exists():

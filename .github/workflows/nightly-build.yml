@@ -7,23 +7,93 @@ on:
   workflow_dispatch:
 
 jobs:
-  check-version:
+  create-nightly-tag:
     if: github.repository == 'langflow-ai/openrag'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
-      nightly_version: ${{ steps.vars.outputs.nightly_version }}
+      nightly_tag: ${{ steps.ensure_unique_tag.outputs.nightly_tag }}
+      nightly_version: ${{ steps.ensure_unique_tag.outputs.nightly_version }}
     steps:
-      - name: Determine Nightly Version
-        id: vars
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          ref: ${{ secrets.NIGHTLY_BRANCH || 'main' }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies for tagging script
+        run: uv pip install --system requests packaging
+
+      - name: Generate nightly tag
+        id: generate_tag
+        env:
+          NIGHTLY_BRANCH: ${{ secrets.NIGHTLY_BRANCH }}
         run: |
-          DATE_PART=$(date -u +%y%m%d)
-          # Use the GitHub run number to create a unique, auto-incrementing suffix
-          NIGHTLY_VERSION="nightly-${DATE_PART}.${{ github.run_number }}.${{ github.run_attempt }}"
-          echo "nightly_version=$NIGHTLY_VERSION" >> "$GITHUB_OUTPUT"
-          echo "Nightly version: $NIGHTLY_VERSION"
+          TAG=$(python3 scripts/ci/pypi_nightly_tag.py)
+          echo "nightly_tag=$TAG" >> $GITHUB_OUTPUT
+          echo "nightly_tag=$TAG"
+
+      - name: Ensure unique nightly tag
+        id: ensure_unique_tag
+        run: |
+          BASE_TAG="${{ steps.generate_tag.outputs.nightly_tag }}"
+          TAG="$BASE_TAG"
+          # If the tag already exists on the remote, resolve collision using .devN suffixes (PEP 440 compliant)
+          if git ls-remote --exit-code --tags origin "$TAG" >/dev/null 2>&1; then
+            echo "Base tag '$TAG' already exists on remote. Searching for available dev suffix..."
+            # Extract the prefix (e.g., v0.3.2) and the current dev number (e.g., 5)
+            VERSION_PREFIX=$(echo "$BASE_TAG" | sed -E 's/\.dev[0-9]+$//')
+            START_DEV=$(echo "$BASE_TAG" | sed -E 's/.*\.dev([0-9]+)$/\1/')
+            
+            MAX_DEV=20
+            FOUND=0
+            i=1
+            while [ "$i" -le "$MAX_DEV" ]; do
+              NEXT_DEV=$((START_DEV + i))
+              CANDIDATE="${VERSION_PREFIX}.dev${NEXT_DEV}"
+              if ! git ls-remote --exit-code --tags origin "$CANDIDATE" >/dev/null 2>&1; then
+                TAG="$CANDIDATE"
+                FOUND=1
+                break
+              fi
+              i=$((i + 1))
+            done
+            if [ "$FOUND" -ne 1 ]; then
+              echo "Error: Unable to find an available dev tag for base tag '$BASE_TAG' after checking ${MAX_DEV} candidates." >&2
+              exit 1
+            fi
+          fi
+          echo "Resolved nightly tag: $TAG"
+          CLEAN_VERSION=$(echo "$TAG" | sed 's/^v//')
+          echo "nightly_tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "nightly_version=$CLEAN_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Update pyproject.toml
+        run: |
+          python3 scripts/ci/update_pyproject_version.py ${{ steps.ensure_unique_tag.outputs.nightly_version }}
+
+      - name: Commit and push tag
+        run: |
+          git config --global user.email "bot-nightly-builds@openrag.org"
+          git config --global user.name "OpenRAG Bot"
+          
+          git add pyproject.toml
+          git commit -m "Update version and project name for nightly ${{ steps.ensure_unique_tag.outputs.nightly_version }}"
+          
+          git tag ${{ steps.ensure_unique_tag.outputs.nightly_tag }}
+          git push origin ${{ steps.ensure_unique_tag.outputs.nightly_tag }}
 
   build:
-    needs: check-version
+    needs: create-nightly-tag
     strategy:
       fail-fast: false
       matrix:
@@ -70,11 +140,28 @@ jobs:
             arch: arm64
             runs-on: [self-hosted, Linux, ARM64, langflow-ai-arm64-40gb-ephemeral]
 
+          # opensearch
+          - image: opensearch
+            file: ./Dockerfile
+            service: openrag-opensearch
+            platform: linux/amd64
+            arch: amd64
+            runs-on: ubuntu-latest
+          - image: opensearch
+            file: ./Dockerfile
+            service: openrag-opensearch
+            platform: linux/arm64
+            arch: arm64
+            runs-on: [self-hosted, Linux, ARM64, langflow-ai-arm64-40gb-ephemeral]
+
 
     runs-on: ${{ matrix.runs-on }}
     steps:
-      - name: Checkout
+      - name: Checkout nightly tag
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-nightly-tag.outputs.nightly_tag }}
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -92,7 +179,7 @@ jobs:
           file: ${{ matrix.file }}
           platforms: ${{ matrix.platform }}
           push: true
-          tags: langflowai/${{ matrix.service }}:${{ needs.check-version.outputs.nightly_version }}-${{ matrix.arch }}
+          tags: langflowai/${{ matrix.service }}:${{ needs.create-nightly-tag.outputs.nightly_version }}-${{ matrix.arch }}
           cache-from: type=gha,scope=nightly-${{ matrix.image }}-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=nightly-${{ matrix.image }}-${{ matrix.arch }}
 
@@ -107,7 +194,7 @@ jobs:
           path: service-${{ matrix.service }}-${{ matrix.arch }}.txt
 
   manifest:
-    needs: [build, check-version]
+    needs: [build, create-nightly-tag]
     runs-on: ubuntu-latest
     steps:
       - name: Download built service artifacts
@@ -125,7 +212,7 @@ jobs:
       - name: Create and push multi-arch manifests
         run: |
           NS="langflowai"
-          VERSION=${{ needs.check-version.outputs.nightly_version }}
+          VERSION=${{ needs.create-nightly-tag.outputs.nightly_version }}
 
           # Derive the list of services from the artifacts produced by the build matrix
           mapfile -t SERVICES < <(find . -name 'service-*.txt' -print0 | xargs -0 cat | sort -u)
@@ -144,12 +231,14 @@ jobs:
               $NS/$SVC:$VERSION-arm64
           done
   publish-pypi:
-    needs: [check-version]
+    needs: [create-nightly-tag]
     runs-on: ubuntu-latest
     if: github.repository == 'langflow-ai/openrag'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ secrets.NIGHTLY_BRANCH || 'main' }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -157,19 +246,18 @@ jobs:
           python-version: '3.13'
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v5
 
       - name: Update version for nightly
         run: |
-          python3 -c "
-          import re
-          with open('pyproject.toml', 'r') as f:
-              content = f.read()
-          # Append .dev + run_number + run_attempt to the version (PEP 440 compliant and unique per attempt)
-          new_content = re.sub(r'^version = \"([^\"]+)\"', r'version = \"\1.dev${{ github.run_number }}${{ github.run_attempt }}\"', content, flags=re.M)
-          with open('pyproject.toml', 'w') as f:
-              f.write(new_content)
-          "
+          # The version has already been updated in create-nightly-tag job
+          # but we need to ensure we are on the correct tag/commit if needed.
+          # However, publish-pypi runs on the same branch by default.
+          # In the create-nightly-tag job we pushed a tag, here we should probably checkout that tag
+          # or just use the updated pyproject.toml if it's shared (it's not).
+          # So we need to checkout the tag.
+          git fetch origin "refs/tags/${{ needs.create-nightly-tag.outputs.nightly_tag }}:refs/tags/${{ needs.create-nightly-tag.outputs.nightly_tag }}"
+          git checkout ${{ needs.create-nightly-tag.outputs.nightly_tag }}
 
       - name: Build wheel and source distribution
         run: |
@@ -177,6 +265,7 @@ jobs:
 
       - name: Publish to PyPI
         run: |
-          uv publish
+          set -euo pipefail
+          uv publish --verbose
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}

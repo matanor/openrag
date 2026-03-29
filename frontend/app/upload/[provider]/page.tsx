@@ -12,7 +12,10 @@ import { useIBMCOSBucketStatusQuery } from "@/app/api/queries/useIBMCOSBucketSta
 import { useS3BucketStatusQuery } from "@/app/api/queries/useS3BucketStatusQuery";
 import { type CloudFile, UnifiedCloudPicker } from "@/components/cloud-picker";
 import { IngestSettings } from "@/components/cloud-picker/ingest-settings";
-import type { IngestSettings as IngestSettingsType } from "@/components/cloud-picker/types";
+import {
+  getIngestChunkSettingsError,
+  type IngestSettings as IngestSettingsType,
+} from "@/components/cloud-picker/types";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -81,6 +84,11 @@ function BucketView({
   };
 
   const ingestSelected = () => {
+    const chunkErr = getIngestChunkSettingsError(ingestSettings);
+    if (chunkErr) {
+      toast.error("Could not start ingest", { description: chunkErr });
+      return;
+    }
     syncMutation.mutate(
       {
         connectorType: connector.type,
@@ -403,6 +411,12 @@ export default function UploadProviderPage() {
 
   const handleSync = async (connector: any) => {
     if (!connector.connectionId || selectedFiles.length === 0) return;
+
+    const chunkErr = getIngestChunkSettingsError(ingestSettings);
+    if (chunkErr) {
+      toast.error("Could not start ingest", { description: chunkErr });
+      return;
+    }
 
     syncMutation.mutate(
       {

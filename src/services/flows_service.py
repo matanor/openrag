@@ -47,7 +47,7 @@ class FlowsService:
         resolved_url = None
         for cand in candidates:
             test_url = replace_localhost_patterns(endpoint, cand)
-            
+
             logger.debug(f"Probing Ollama candidate via Langflow: {test_url}")
             try:
                 response = await clients.langflow_request(
@@ -61,7 +61,7 @@ class FlowsService:
             except Exception as e:
                 logger.debug(f"Probe failed for {test_url}: {e}")
                 continue
-        
+
         if not resolved_url:
             # Fallback to simple transformation if probing fails
             resolved_url = transform_localhost_url(endpoint)
@@ -95,23 +95,23 @@ class FlowsService:
     def _get_latest_backup_path(self, flow_id: str, flow_type: str):
         """
         Get the path to the latest backup file for a flow.
-        
+
         Args:
             flow_id: The flow ID
             flow_type: The flow type name
-        
+
         Returns:
             str: Path to latest backup file, or None if no backup exists
         """
         backup_dir = self._get_backup_directory()
-        
+
         if not os.path.exists(backup_dir):
             return None
-        
+
         # Find all backup files for this flow
         backup_files = []
         prefix = f"{flow_type}_"
-        
+
         try:
             for filename in os.listdir(backup_dir):
                 if filename.startswith(prefix) and filename.endswith(".json"):
@@ -122,10 +122,10 @@ class FlowsService:
         except Exception as e:
             logger.warning(f"Error reading backup directory: {str(e)}")
             return None
-        
+
         if not backup_files:
             return None
-        
+
         # Return the most recent backup (highest mtime)
         backup_files.sort(key=lambda x: x[0], reverse=True)
         return backup_files[0][1]
@@ -134,17 +134,17 @@ class FlowsService:
         """
         Compare two flow structures to see if they're different.
         Normalizes both flows before comparison.
-        
+
         Args:
             flow1: First flow data
             flow2: Second flow data
-        
+
         Returns:
             bool: True if flows are different, False if they're the same
         """
         normalized1 = self._normalize_flow_structure(flow1)
         normalized2 = self._normalize_flow_structure(flow2)
-        
+
         # Compare normalized structures
         return normalized1 != normalized2
 
@@ -152,10 +152,10 @@ class FlowsService:
         """
         Backup all flows from Langflow to the backup folder.
         Only backs up flows that have changed since the last backup.
-        
+
         Args:
             only_if_changed: If True, only backup flows that differ from latest backup
-        
+
         Returns:
             dict: Summary of backup operations with success/failure status
         """
@@ -200,7 +200,7 @@ class FlowsService:
                 flow_locked = current_flow.get("locked", False)
                 latest_backup_path = self._get_latest_backup_path(flow_id, flow_type)
                 has_backups = latest_backup_path is not None
-                
+
                 # If flow is locked and no backups exist, skip backup
                 if flow_locked and not has_backups:
                     logger.debug(
@@ -212,13 +212,13 @@ class FlowsService:
                         "reason": "locked_without_backups",
                     })
                     continue
-                
+
                 # Check if we need to backup (only if changed)
                 if only_if_changed and has_backups:
                     try:
                         with open(latest_backup_path, "r") as f:
                             latest_backup = json.load(f)
-                        
+
                         # Compare flows
                         if not self._compare_flows(current_flow, latest_backup):
                             logger.debug(
@@ -280,12 +280,12 @@ class FlowsService:
     async def _backup_flow(self, flow_id: str, flow_type: str, flow_data: dict = None):
         """
         Backup a single flow to the backup folder.
-        
+
         Args:
             flow_id: The flow ID to backup
             flow_type: The flow type name (nudges, retrieval, ingest, url_ingest)
             flow_data: The flow data to backup (if None, fetches from API)
-        
+
         Returns:
             str: Path to the backup file, or None if backup failed
         """
@@ -717,7 +717,7 @@ class FlowsService:
         for node in nodes:
             node_data = node.get("data", {})
             node_template = node_data.get("node", {})
-            
+
             normalized_node = {
                 "id": node.get("id"),  # Keep ID for edge matching
                 "type": node.get("type"),
@@ -775,20 +775,20 @@ class FlowsService:
             # Compare entire normalized structures exactly
             # Sort nodes and edges for consistent comparison
             normalized_langflow["data"]["nodes"] = sorted(
-                normalized_langflow["data"]["nodes"], 
+                normalized_langflow["data"]["nodes"],
                 key=lambda x: (x.get("id", ""), x.get("type", ""))
             )
             normalized_file["data"]["nodes"] = sorted(
-                normalized_file["data"]["nodes"], 
+                normalized_file["data"]["nodes"],
                 key=lambda x: (x.get("id", ""), x.get("type", ""))
             )
 
             normalized_langflow["data"]["edges"] = sorted(
-                normalized_langflow["data"]["edges"], 
+                normalized_langflow["data"]["edges"],
                 key=lambda x: (x.get("source", ""), x.get("target", ""), x.get("sourceHandle", ""), x.get("targetHandle", ""))
             )
             normalized_file["data"]["edges"] = sorted(
-                normalized_file["data"]["edges"], 
+                normalized_file["data"]["edges"],
                 key=lambda x: (x.get("source", ""), x.get("target", ""), x.get("sourceHandle", ""), x.get("targetHandle", ""))
             )
 
@@ -798,6 +798,80 @@ class FlowsService:
         except Exception as e:
             logger.error(f"Error comparing flow {flow_id} with file: {str(e)}")
             return False
+
+    async def ensure_flows_exist(self) -> set[str]:
+        """
+        Ensure all configured flows exist in Langflow.
+
+        Creates flows from their JSON files if they are not already present in
+        the Langflow database.  This is intentionally create-only: it never
+        patches or overwrites an existing flow, preserving any edits the user
+        has made in the Langflow UI.
+
+        This replaces the LANGFLOW_LOAD_FLOWS_PATH mechanism, which performed a
+        blind upsert on every container start and discarded user edits.
+
+        Returns the set of flow type names that were actually created.
+        """
+        flow_configs = [
+            ("nudges", NUDGES_FLOW_ID),
+            ("retrieval", LANGFLOW_CHAT_FLOW_ID),
+            ("ingest", LANGFLOW_INGEST_FLOW_ID),
+            ("url_ingest", LANGFLOW_URL_INGEST_FLOW_ID),
+        ]
+        created_flow_types: set[str] = set()
+
+        for flow_type, flow_id in flow_configs:
+            if not flow_id:
+                continue
+
+            try:
+                response = await clients.langflow_request(
+                    "GET", f"/api/v1/flows/{flow_id}"
+                )
+                if response.status_code == 200:
+                    logger.info(
+                        f"Flow {flow_type} (ID: {flow_id}) already exists, skipping creation"
+                    )
+                    continue
+
+                if response.status_code != 404:
+                    logger.warning(
+                        f"Unexpected status checking {flow_type} flow (ID: {flow_id}): "
+                        f"HTTP {response.status_code} — skipping creation to avoid overwriting existing data"
+                    )
+                    continue
+
+                flow_path = self._find_flow_file_by_id(flow_id)
+                if not flow_path:
+                    logger.warning(
+                        f"No flow file found for {flow_type} (ID: {flow_id}), cannot create"
+                    )
+                    continue
+
+                with open(flow_path, "r") as f:
+                    flow_data = json.load(f)
+
+                response = await clients.langflow_request(
+                    "PUT", f"/api/v1/flows/{flow_id}", json=flow_data
+                )
+                if response.status_code in (200, 201):
+                    logger.info(
+                        f"Created {flow_type} flow (ID: {flow_id}) from {os.path.basename(flow_path)}"
+                    )
+                    created_flow_types.add(flow_type)
+                else:
+                    logger.warning(
+                        f"Failed to create {flow_type} flow (ID: {flow_id}): "
+                        f"HTTP {response.status_code} — {response.text}"
+                    )
+
+            except Exception as e:
+                logger.error(
+                    f"Error ensuring {flow_type} flow (ID: {flow_id}) exists: {e}"
+                )
+
+        return created_flow_types
 
     async def check_flows_reset(self):
         """
@@ -819,7 +893,7 @@ class FlowsService:
 
             logger.info(f"Checking if {flow_type} flow (ID: {flow_id}) was reset")
             is_reset = await self._compare_flow_with_file(flow_id)
-            
+
             if is_reset:
                 logger.info(f"Flow {flow_type} (ID: {flow_id}) appears to have been reset")
                 reset_flows.append(flow_type)
@@ -827,7 +901,7 @@ class FlowsService:
                 logger.info(f"Flow {flow_type} (ID: {flow_id}) does not match reset state")
 
         return reset_flows
-        
+
     async def change_langflow_model_value(
         self,
         provider: str,
@@ -917,23 +991,23 @@ class FlowsService:
             # Get all embedding nodes in the flow
             embedding_nodes = self._find_nodes_in_flow(flow_data, display_name=OPENAI_EMBEDDING_COMPONENT_DISPLAY_NAME)
             logger.info(f"Found {len(embedding_nodes)} embedding nodes in flow {flow_name} with display name '{OPENAI_EMBEDDING_COMPONENT_DISPLAY_NAME}'")
-            
+
             # Count configured embedding-enabled providers
             config_obj = get_openrag_config()
             configured_providers = []
             if config_obj.providers.openai.configured: configured_providers.append("openai")
             if config_obj.providers.watsonx.configured: configured_providers.append("watsonx")
             if config_obj.providers.ollama.configured: configured_providers.append("ollama")
-            
+
             # Ensure current provider is in the list for counting purposes if it's being configured
             if provider in ["openai", "watsonx", "ollama"] and provider not in configured_providers:
                 configured_providers.append(provider)
-            
+
             all_possible = ["openai", "watsonx", "ollama"]
             configured_providers = [p for p in all_possible if p in configured_providers]
             provider_count = len(configured_providers)
             logger.info(f"Configured embedding providers: {configured_providers} (count: {provider_count})")
-            
+
             # Determine slot mapping context
             if provider_count == 1:
                 logger.info("Configuration mode: all 3 slots belong to the single active provider")
@@ -948,7 +1022,7 @@ class FlowsService:
             for node, idx in embedding_nodes:
                 if self._get_node_provider(node) == provider_display:
                     matched_nodes.append((node, idx))
-            
+
             if matched_nodes:
                 logger.info(f"Found {len(matched_nodes)} nodes already configured for provider '{provider}'")
                 for node, idx in matched_nodes:
@@ -1035,7 +1109,7 @@ class FlowsService:
         # Only call if code field exists (custom components should have code)
         if "code" in template and "value" in template["code"]:
             code_value = template["code"]["value"]
-                            
+
             try:
                 update_payload = {
                     "code": code_value,
@@ -1044,11 +1118,11 @@ class FlowsService:
                     "field_value": model,
                     "tool_mode": False,
                 }
-                
+
                 response = await clients.langflow_request(
                     "POST", "/api/v1/custom_component/update", json=update_payload
                 )
-                
+
                 if response.status_code == 200:
                     response_data = response.json()
                     # Update template with the new template from response.data
@@ -1161,11 +1235,11 @@ class FlowsService:
                 "model_id": model_value,
                 "enabled": True
             }]
-            
+
             response = await clients.langflow_request(
                 "POST", "/api/v1/models/enabled_models", json=enable_payload
             )
-            
+
             if response.status_code == 200:
                 logger.info(f"Successfully enabled model {model_value} for provider {provider_name}")
             else:

@@ -411,13 +411,14 @@ async def ingest_openrag_docs_when_ready(
 ):
     """Ingest OpenRAG docs during onboarding."""
     use_url_ingest = _should_use_url_default_docs_ingest()
+    task_id = None
     if use_url_ingest:
         try:
             await TelemetryClient.send_event(
                 Category.DOCUMENT_INGESTION, MessageId.ORB_DOC_DEFAULT_URL_START
             )
             if DISABLE_INGEST_WITH_LANGFLOW:
-                await _ingest_default_documents_url(
+                task_id = await _ingest_default_documents_url(
                     document_service=document_service,
                     docs_url=DEFAULT_DOCS_URL,
                     crawl_depth=DEFAULT_DOCS_CRAWL_DEPTH,
@@ -427,7 +428,7 @@ async def ingest_openrag_docs_when_ready(
                     "Ingesting default documents using Langflow",
                     docs_url=DEFAULT_DOCS_URL,
                 )
-                await _ingest_default_documents_url_langflow(
+                task_id = await _ingest_default_documents_url_langflow(
                     langflow_file_service=langflow_file_service,
                     session_manager=session_manager,
                     task_service=task_service,
@@ -442,6 +443,7 @@ async def ingest_openrag_docs_when_ready(
             await TelemetryClient.send_event(
                 Category.DOCUMENT_INGESTION, MessageId.ORB_DOC_DEFAULT_URL_FAILED
             )
+    return task_id
 
 
 async def ingest_default_documents_when_ready(
@@ -457,9 +459,11 @@ async def ingest_default_documents_when_ready(
         await TelemetryClient.send_event(
             Category.DOCUMENT_INGESTION, MessageId.ORB_DOC_DEFAULT_START
         )
-        await ingest_openrag_docs_when_ready(
-            document_service, task_service, langflow_file_service, session_manager
-        )
+        task_id = None
+        if _should_use_url_default_docs_ingest():
+            task_id = await ingest_openrag_docs_when_ready(
+                document_service, task_service, langflow_file_service, session_manager
+            )
 
         base_dir = _get_documents_dir()
         if not os.path.isdir(base_dir):
@@ -470,8 +474,7 @@ async def ingest_default_documents_when_ready(
         excluded_files = set(EXCLUDED_INGESTION_FILES)
         if _should_use_url_default_docs_ingest():
             excluded_files.update(URL_INGEST_EXCLUDED_INGESTION_FILES)
-
-        # Collect files recursively, excluding warmup files and URL-ingested docs
+        
         file_paths = [
             os.path.join(root, fn)
             for root, _, files in os.walk(base_dir)
@@ -483,17 +486,21 @@ async def ingest_default_documents_when_ready(
             raise FileNotFoundError(f"No default documents found in {base_dir}")
 
         if DISABLE_INGEST_WITH_LANGFLOW:
-            await _ingest_default_documents_openrag(
-                document_service, task_service, file_paths
+            new_task_id = await _ingest_default_documents_openrag(
+                document_service, task_service, file_paths, existing_task_id=task_id, connector_type="local"
             )
+            task_id = new_task_id or task_id
         else:
-            await _ingest_default_documents_langflow(
-                langflow_file_service, session_manager, task_service, file_paths
+            new_task_id = await _ingest_default_documents_langflow(
+                langflow_file_service, session_manager, task_service, file_paths, existing_task_id=task_id, connector_type="local"
             )
+            task_id = new_task_id or task_id
 
         await TelemetryClient.send_event(
             Category.DOCUMENT_INGESTION, MessageId.ORB_DOC_DEFAULT_COMPLETE
         )
+
+        return task_id
 
     except Exception as e:
         logger.error("Default documents ingestion failed", error=str(e))
@@ -504,7 +511,7 @@ async def ingest_default_documents_when_ready(
 
 
 async def _ingest_default_documents_langflow(
-    langflow_file_service, session_manager, task_service, file_paths
+    langflow_file_service, session_manager, task_service, file_paths, existing_task_id: str = None, connector_type: str = "openrag_docs"
 ):
     """Ingest default documents using Langflow upload-ingest-delete pipeline."""
 
@@ -539,7 +546,7 @@ async def _ingest_default_documents_langflow(
                 {"key": "owner", "value": None},
                 {"key": "owner_name", "value": anonymous_user.name},
                 {"key": "owner_email", "value": anonymous_user.email},
-                {"key": "connector_type", "value": "system_default"},
+                {"key": "connector_type", "value": "openrag_docs"},
                 {"key": "is_sample_data", "value": "true"},
             ]
         }
@@ -559,6 +566,8 @@ async def _ingest_default_documents_langflow(
         settings=None,  # Use default ingestion settings
         delete_after_ingest=True,  # Clean up after ingestion
         replace_duplicates=True,
+        connector_type=connector_type,
+        existing_task_id=existing_task_id,
     )
 
     logger.info(
@@ -566,6 +575,7 @@ async def _ingest_default_documents_langflow(
         task_id=task_id,
         file_count=len(file_paths),
     )
+    return task_id
 
 
 async def _ingest_default_documents_url_langflow(
@@ -627,6 +637,7 @@ async def _ingest_default_documents_url_langflow(
         task_id=task_id,
         docs_url=docs_url,
     )
+    return task_id
 
 
 async def _ingest_default_documents_url(
@@ -658,7 +669,7 @@ async def _ingest_default_documents_url(
             owner_name=None,
             owner_email=None,
             is_sample_data=True,
-            connector_type="system_default",
+            connector_type="openrag_docs",
         )
         await processor.process_document_standard(
             file_path=temp_file_path,
@@ -669,7 +680,7 @@ async def _ingest_default_documents_url(
             owner_name=None,
             owner_email=None,
             file_size=os.path.getsize(temp_file_path),
-            connector_type="system_default",
+            connector_type="openrag_docs",
             is_sample_data=True,
         )
     finally:
@@ -1036,7 +1047,7 @@ async def opensearch_health_ready(request):
 
 
 async def _ingest_default_documents_openrag(
-    document_service, task_service, file_paths, connector_type: str = "local"
+    document_service, task_service, file_paths, existing_task_id: str = None, connector_type: str = "openrag_docs"
 ):
     """Ingest default documents using traditional OpenRAG processor."""
     logger.info(
@@ -1057,12 +1068,13 @@ async def _ingest_default_documents_openrag(
         connector_type=connector_type,
     )
 
-    task_id = await task_service.create_custom_task("anonymous", file_paths, processor)
+    task_id = await task_service.create_custom_task("anonymous", file_paths, processor, existing_task_id=existing_task_id)
     logger.info(
         "Started traditional OpenRAG ingestion task",
         task_id=task_id,
         file_count=len(file_paths),
     )
+    return task_id
 
 
 async def _update_mcp_servers_with_provider_credentials(services):
@@ -1199,6 +1211,20 @@ async def startup_tasks(services):
     # Update MCP servers with provider credentials (especially important for no-auth mode)
     await _update_mcp_servers_with_provider_credentials(services)
 
+    # Ensure all configured flows exist in Langflow (create-only, never overwrites).
+    # This replaces LANGFLOW_LOAD_FLOWS_PATH, which performed a blind upsert on
+    # every container start and discarded any user edits made in the Langflow UI.
+    newly_created: set[str] = set()
+    try:
+        flows_service = services["flows_service"]
+        newly_created = await flows_service.ensure_flows_exist()
+    except Exception as e:
+        logger.error(
+            "Failed to ensure Langflow flows exist at startup — "
+            "flows may be missing until the next restart",
+            error=str(e),
+        )
+
     # Check if flows were reset and reapply settings if config is edited
     try:
         config = get_openrag_config()
@@ -1206,6 +1232,9 @@ async def startup_tasks(services):
             logger.info("Checking if Langflow flows were reset")
             flows_service = services["flows_service"]
             reset_flows = await flows_service.check_flows_reset()
+            # Exclude flows that were just seeded — they match the JSON by design,
+            # not because they were externally reset.
+            reset_flows = [f for f in reset_flows if f not in newly_created]
 
             if reset_flows:
                 logger.info(

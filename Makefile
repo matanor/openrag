@@ -79,7 +79,8 @@ endef
        test test-unit test-integration test-ci test-ci-local test-sdk test-os-jwt lint \
        backend frontend docling docling-stop install-be install-fe build-be build-fe build-os build-lf logs-be logs-fe logs-lf logs-os \
        shell-be shell-lf shell-os restart status health db-reset clear-os-data flow-upload setup factory-reset \
-       dev-branch build-langflow-dev stop-dev clean-dev logs-dev logs-lf-dev shell-lf-dev restart-dev status-dev
+       dev-branch build-langflow-dev stop-dev clean-dev logs-dev logs-lf-dev shell-lf-dev restart-dev status-dev \
+       ensure-langflow-data
 
 all: help
 
@@ -319,7 +320,11 @@ help_utils: ## Show utility commands
 # DEVELOPMENT ENVIRONMENTS
 ######################
 
-dev: ## Start full stack with GPU support
+ensure-langflow-data: ## Create the langflow-data directory if it does not exist
+	@mkdir -p langflow-data
+	@chmod 777 langflow-data
+
+dev: ensure-langflow-data ## Start full stack with GPU support
 	@echo "$(YELLOW)Starting OpenRAG with GPU support...$(NC)"
 	$(COMPOSE_CMD) -f docker-compose.yml -f docker-compose.gpu.yml up -d
 	@echo "$(PURPLE)Services started!$(NC)"
@@ -329,7 +334,7 @@ dev: ## Start full stack with GPU support
 	@echo "   $(CYAN)OpenSearch:$(NC) http://localhost:9200"
 	@echo "   $(CYAN)Dashboards:$(NC) http://localhost:5601"
 
-dev-cpu: ## Start full stack with CPU only
+dev-cpu: ensure-langflow-data ## Start full stack with CPU only
 	@echo "$(YELLOW)Starting OpenRAG with CPU only...$(NC)"
 	$(COMPOSE_CMD) up -d
 	@echo "$(PURPLE)Services started!$(NC)"
@@ -339,7 +344,7 @@ dev-cpu: ## Start full stack with CPU only
 	@echo "   $(CYAN)OpenSearch:$(NC) http://localhost:9200"
 	@echo "   $(CYAN)Dashboards:$(NC) http://localhost:5601"
 
-dev-local: ## Start infrastructure for local development
+dev-local: ensure-langflow-data ## Start infrastructure for local development
 	@echo "$(YELLOW)Starting infrastructure only (for local development)...$(NC)"
 	$(COMPOSE_CMD) -f docker-compose.yml -f docker-compose.gpu.yml up -d opensearch openrag-backend dashboards langflow
 	@echo "$(PURPLE)Infrastructure started!$(NC)"
@@ -350,7 +355,7 @@ dev-local: ## Start infrastructure for local development
 	@echo ""
 	@echo "$(YELLOW)Now run 'make backend' and 'make frontend' in separate terminals$(NC)"
 
-dev-local-cpu: ## Start infrastructure for local development, with CPU only
+dev-local-cpu: ensure-langflow-data ## Start infrastructure for local development, with CPU only
 	@echo "$(YELLOW)Starting infrastructure only (for local development)...$(NC)"
 	$(COMPOSE_CMD) up -d opensearch openrag-backend dashboards langflow
 	@echo "$(PURPLE)Infrastructure started!$(NC)"
@@ -361,7 +366,7 @@ dev-local-cpu: ## Start infrastructure for local development, with CPU only
 	@echo ""
 	@echo "$(YELLOW)Now run 'make backend' and 'make frontend' in separate terminals$(NC)"
 
-dev-local-build-lf: ## Start infrastructure for local development, building only Langflow image
+dev-local-build-lf: ensure-langflow-data ## Start infrastructure for local development, building only Langflow image
 	@echo "$(YELLOW)Building Langflow image...$(NC)"
 	$(COMPOSE_CMD) -f docker-compose.yml -f docker-compose.gpu.yml build langflow
 	@echo "$(YELLOW)Starting infrastructure only (for local development)...$(NC)"
@@ -374,7 +379,7 @@ dev-local-build-lf: ## Start infrastructure for local development, building only
 	@echo ""
 	@echo "$(YELLOW)Now run 'make backend' and 'make frontend' in separate terminals$(NC)"
 
-dev-local-build-lf-cpu: ## Start infrastructure for local development, building only Langflow image with CPU only
+dev-local-build-lf-cpu: ensure-langflow-data ## Start infrastructure for local development, building only Langflow image with CPU only
 	@echo "$(YELLOW)Building Langflow image (CPU)...$(NC)"
 	$(COMPOSE_CMD) build langflow
 	@echo "$(YELLOW)Starting infrastructure only (for local development)...$(NC)"
@@ -393,7 +398,7 @@ dev-local-build-lf-cpu: ## Start infrastructure for local development, building 
 # Usage: make dev-branch BRANCH=test-openai-responses
 #        make dev-branch BRANCH=feature-x REPO=https://github.com/myorg/langflow.git
 
-dev-branch: ## Build & run full stack with custom Langflow branch
+dev-branch: ensure-langflow-data ## Build & run full stack with custom Langflow branch
 	@echo "$(YELLOW)Building Langflow from branch: $(BRANCH)$(NC)"
 	@echo "   $(CYAN)Repository:$(NC) $(REPO)"
 	@echo ""
@@ -409,7 +414,7 @@ dev-branch: ## Build & run full stack with custom Langflow branch
 	@echo "   $(CYAN)OpenSearch:$(NC)            http://localhost:9200"
 	@echo "   $(CYAN)Dashboards:$(NC)            http://localhost:5601"
 
-dev-branch-cpu: ## Build & run full stack with custom Langflow branch and CPU only mode
+dev-branch-cpu: ensure-langflow-data ## Build & run full stack with custom Langflow branch and CPU only mode
 	@echo "$(YELLOW)Building Langflow from branch: $(BRANCH)$(NC)"
 	@echo "   $(CYAN)Repository:$(NC) $(REPO)"
 	@echo ""
@@ -436,7 +441,7 @@ stop-dev: ## Stop dev environment containers
 	$(COMPOSE_CMD) -f docker-compose.dev.yml down
 	@echo "$(PURPLE)Dev environment stopped.$(NC)"
 
-restart-dev: ## Restart dev environment
+restart-dev: ensure-langflow-data ## Restart dev environment
 	@echo "$(YELLOW)Restarting dev environment with branch: $(BRANCH)$(NC)"
 	$(COMPOSE_CMD) -f docker-compose.dev.yml down
 	GIT_BRANCH=$(BRANCH) GIT_REPO=$(REPO) $(COMPOSE_CMD) -f docker-compose.dev.yml up -d
@@ -502,6 +507,7 @@ factory-reset: ## Complete reset (stop, remove volumes, clear data, remove image
 	echo "  - Stop all containers"; \
 	echo "  - Remove all volumes"; \
 	echo "  - Delete opensearch-data directory"; \
+	echo "  - Delete langflow-data directory"; \
 	echo "  - Delete config directory"; \
 	echo "  - Delete JWT keys (private_key.pem, public_key.pem)"; \
 	echo "  - Remove OpenRAG images"; \
@@ -516,7 +522,7 @@ factory-reset: ## Complete reset (stop, remove volumes, clear data, remove image
 	fi; \
 	echo ""; \
 	echo "$(YELLOW)Stopping all services and removing volumes...$(NC)"; \
-	$(COMPOSE_CMD) down -v --remove-orphans --rmi local || true; \
+	$(COMPOSE_CMD) down -v --remove-orphans || true; \
 	echo "$(YELLOW)Removing local data directories...$(NC)"; \
 	if [ -d "opensearch-data" ]; then \
 		echo "Removing opensearch-data..."; \
@@ -524,6 +530,11 @@ factory-reset: ## Complete reset (stop, remove volumes, clear data, remove image
 		$(CONTAINER_RUNTIME) run --rm -v "$$(pwd)/opensearch-data:/data" alpine sh -c "rm -rf /data/*" 2>/dev/null || \
 		rm -rf opensearch-data/* 2>/dev/null || true; \
 		echo "$(PURPLE)opensearch-data removed$(NC)"; \
+	fi; \
+	if [ -d "langflow-data" ]; then \
+		echo "Removing langflow-data..."; \
+		rm -rf langflow-data; \
+		echo "$(PURPLE)langflow-data removed$(NC)"; \
 	fi; \
 	if [ -d "config" ]; then \
 		echo "Removing config..."; \
@@ -665,11 +676,14 @@ test-unit: ## Run unit tests only
 	@echo "$(PURPLE)Unit tests complete.$(NC)"
 
 test-integration: ## Run integration tests (requires infrastructure)
-	@echo "$(YELLOW)Running integration tests (requires infrastructure)...$(NC)"
-	@echo "$(CYAN)Make sure to run 'make dev-local' first!$(NC)"
-	uv run pytest tests/integration/ -v
+	@echo "$(CYAN)════════════════════════════════════════$(NC)"
+	@echo "$(PURPLE) Core Integration Tests$(NC)"
+	@echo "$(CYAN)════════════════════════════════════════$(NC)"
+	@echo "$(YELLOW)Make sure to run 'make dev-local' first!$(NC)"
+	uv run pytest tests/integration/core/ -v
 
-test-ci: ## Start infra, run integration + SDK tests, tear down (uses DockerHub images)
+test-ci: ensure-langflow-data ## Start infra, run integration + SDK tests, tear down (uses DockerHub images)
+	@chmod 777 langflow-data
 	@set -e; \
 	echo "$(YELLOW)Installing test dependencies...$(NC)"; \
 	uv sync --group dev; \
@@ -681,12 +695,15 @@ test-ci: ## Start infra, run integration + SDK tests, tear down (uses DockerHub 
 		chmod 600 keys/private_key.pem 2>/dev/null || true; \
 		chmod 644 keys/public_key.pem 2>/dev/null || true; \
 	fi; \
+	echo "::group::Cleanup, Pull & Build Images"; \
 	echo "$(YELLOW)Cleaning up old containers and volumes...$(NC)"; \
 	$(COMPOSE_CMD) down -v 2>/dev/null || true; \
 	echo "$(YELLOW)Pulling latest images...$(NC)"; \
 	$(COMPOSE_CMD) pull; \
 	echo "$(YELLOW)Building OpenSearch image override...$(NC)"; \
 	$(CONTAINER_RUNTIME) build --no-cache -t langflowai/openrag-opensearch:latest -f Dockerfile .; \
+	echo "::endgroup::"; \
+	echo "::group::Start Infrastructure"; \
 	echo "$(YELLOW)Starting infra (OpenSearch + Dashboards + Langflow + Backend + Frontend) with CPU containers$(NC)"; \
 	OPENSEARCH_HOST=opensearch $(COMPOSE_CMD) up -d opensearch dashboards langflow openrag-backend openrag-frontend; \
 	echo "$(CYAN)Architecture: $$(uname -m), Platform: $$(uname -s)$(NC)"; \
@@ -752,31 +769,42 @@ test-ci: ## Start infra, run integration + SDK tests, tear down (uses DockerHub 
 		$(COMPOSE_CMD) down -v 2>/dev/null || true; \
 		exit 1; \
 	fi; \
-	echo "$(PURPLE)Running integration tests$(NC)"; \
+	echo "::endgroup::"; \
+	echo "::group::Core Integration Tests"; \
+	echo "$(CYAN)════════════════════════════════════════$(NC)"; \
+	echo "$(PURPLE) Core Integration Tests$(NC)"; \
+	echo "$(CYAN)════════════════════════════════════════$(NC)"; \
 	LOG_LEVEL=$${LOG_LEVEL:-DEBUG} \
 	GOOGLE_OAUTH_CLIENT_ID="" \
 	GOOGLE_OAUTH_CLIENT_SECRET="" \
 	OPENSEARCH_HOST=localhost OPENSEARCH_PORT=9200 \
 	OPENSEARCH_USERNAME=admin OPENSEARCH_PASSWORD=$${OPENSEARCH_PASSWORD} \
 	DISABLE_STARTUP_INGEST=$${DISABLE_STARTUP_INGEST:-true} \
-	uv run pytest tests/integration -vv -s -o log_cli=true --log-cli-level=DEBUG; \
+	uv run pytest tests/integration/core -vv -s -o log_cli=true --log-cli-level=DEBUG; \
 	TEST_RESULT=$$?; \
+	echo "::endgroup::"; \
 	echo ""; \
 	echo "$(YELLOW)Waiting for frontend at http://localhost:3000...$(NC)"; \
 	for i in $$(seq 1 60); do \
 		curl -s http://localhost:3000/ >/dev/null 2>&1 && break || sleep 2; \
 	done; \
-	echo "$(PURPLE)Running Python SDK integration tests$(NC)"; \
-	cd sdks/python && \
-	uv sync --extra dev && \
-	OPENRAG_URL=http://localhost:3000 uv run pytest tests/test_integration.py -vv -s || TEST_RESULT=1; \
-	cd ../..; \
-	echo "$(PURPLE)Running TypeScript SDK integration tests$(NC)"; \
+	echo "::group::SDK Integration Tests (Python)"; \
+	echo "$(CYAN)════════════════════════════════════════$(NC)"; \
+	echo "$(PURPLE) SDK Integration Tests (Python)$(NC)"; \
+	echo "$(CYAN)════════════════════════════════════════$(NC)"; \
+	uv pip install -e sdks/python; \
+	SDK_TESTS_ONLY=true OPENRAG_URL=http://localhost:3000 uv run pytest tests/integration/sdk/ -vv -s || TEST_RESULT=1; \
+	echo "::endgroup::"; \
+	echo "::group::SDK Integration Tests (TypeScript)"; \
+	echo "$(CYAN)════════════════════════════════════════$(NC)"; \
+	echo "$(PURPLE) SDK Integration Tests (TypeScript)$(NC)"; \
+	echo "$(CYAN)════════════════════════════════════════$(NC)"; \
 	cd sdks/typescript && \
 	npm install && npm run build && \
 	OPENRAG_URL=http://localhost:3000 npm test || TEST_RESULT=1; \
 	cd ../..; \
-	echo "$(CYAN)=================================$(NC)"; \
+	echo "::endgroup::"; \
+	echo "$(CYAN)════════════════════════════════════════$(NC)"; \
 	echo ""; \
 	($(call test_jwt_opensearch)) || TEST_RESULT=1; \
 	echo "$(YELLOW)Tearing down infra$(NC)"; \
@@ -784,7 +812,8 @@ test-ci: ## Start infra, run integration + SDK tests, tear down (uses DockerHub 
 	$(COMPOSE_CMD) down -v 2>/dev/null || true; \
 	exit $$TEST_RESULT
 
-test-ci-local: ## Same as test-ci but builds all images locally
+test-ci-local: ensure-langflow-data ## Same as test-ci but builds all images locally
+	@chmod 777 langflow-data
 	@set -e; \
 	echo "$(YELLOW)Installing test dependencies...$(NC)"; \
 	uv sync --group dev; \
@@ -796,6 +825,7 @@ test-ci-local: ## Same as test-ci but builds all images locally
 		chmod 600 keys/private_key.pem 2>/dev/null || true; \
 		chmod 644 keys/public_key.pem 2>/dev/null || true; \
 	fi; \
+	echo "::group::Cleanup & Build Images"; \
 	echo "$(YELLOW)Cleaning up old containers and volumes...$(NC)"; \
 	$(COMPOSE_CMD) down -v 2>/dev/null || true; \
 	echo "$(YELLOW)Building all images locally...$(NC)"; \
@@ -803,6 +833,8 @@ test-ci-local: ## Same as test-ci but builds all images locally
 	$(CONTAINER_RUNTIME) build -t langflowai/openrag-backend:latest -f Dockerfile.backend .; \
 	$(CONTAINER_RUNTIME) build -t langflowai/openrag-frontend:latest -f Dockerfile.frontend .; \
 	$(CONTAINER_RUNTIME) build -t langflowai/openrag-langflow:latest -f Dockerfile.langflow .; \
+	echo "::endgroup::"; \
+	echo "::group::Start Infrastructure"; \
 	echo "$(YELLOW)Starting infra (OpenSearch + Dashboards + Langflow + Backend + Frontend) with CPU containers$(NC)"; \
 	echo "$(CYAN)Architecture: $$(uname -m), Platform: $$(uname -s)$(NC)"; \
 	OPENSEARCH_HOST=opensearch $(COMPOSE_CMD) up -d opensearch dashboards langflow openrag-backend openrag-frontend; \
@@ -868,31 +900,42 @@ test-ci-local: ## Same as test-ci but builds all images locally
 		$(COMPOSE_CMD) down -v 2>/dev/null || true; \
 		exit 1; \
 	fi; \
-	echo "$(PURPLE)Running integration tests$(NC)"; \
+	echo "::endgroup::"; \
+	echo "::group::Core Integration Tests"; \
+	echo "$(CYAN)════════════════════════════════════════$(NC)"; \
+	echo "$(PURPLE) Core Integration Tests$(NC)"; \
+	echo "$(CYAN)════════════════════════════════════════$(NC)"; \
 	LOG_LEVEL=$${LOG_LEVEL:-DEBUG} \
 	GOOGLE_OAUTH_CLIENT_ID="" \
 	GOOGLE_OAUTH_CLIENT_SECRET="" \
 	OPENSEARCH_HOST=localhost OPENSEARCH_PORT=9200 \
 	OPENSEARCH_USERNAME=admin OPENSEARCH_PASSWORD=$${OPENSEARCH_PASSWORD} \
 	DISABLE_STARTUP_INGEST=$${DISABLE_STARTUP_INGEST:-true} \
-	uv run pytest tests/integration -vv -s -o log_cli=true --log-cli-level=DEBUG; \
+	uv run pytest tests/integration/core -vv -s -o log_cli=true --log-cli-level=DEBUG; \
 	TEST_RESULT=$$?; \
+	echo "::endgroup::"; \
 	echo ""; \
 	echo "$(YELLOW)Waiting for frontend at http://localhost:3000...$(NC)"; \
 	for i in $$(seq 1 60); do \
 		curl -s http://localhost:3000/ >/dev/null 2>&1 && break || sleep 2; \
 	done; \
-	echo "$(PURPLE)Running Python SDK integration tests$(NC)"; \
-	cd sdks/python && \
-	uv sync --extra dev && \
-	OPENRAG_URL=http://localhost:3000 uv run pytest tests/test_integration.py -vv -s || TEST_RESULT=1; \
-	cd ../..; \
-	echo "$(PURPLE)Running TypeScript SDK integration tests$(NC)"; \
+	echo "::group::SDK Integration Tests (Python)"; \
+	echo "$(CYAN)════════════════════════════════════════$(NC)"; \
+	echo "$(PURPLE) SDK Integration Tests (Python)$(NC)"; \
+	echo "$(CYAN)════════════════════════════════════════$(NC)"; \
+	uv pip install -e sdks/python; \
+	SDK_TESTS_ONLY=true OPENRAG_URL=http://localhost:3000 uv run pytest tests/integration/sdk/ -vv -s || TEST_RESULT=1; \
+	echo "::endgroup::"; \
+	echo "::group::SDK Integration Tests (TypeScript)"; \
+	echo "$(CYAN)════════════════════════════════════════$(NC)"; \
+	echo "$(PURPLE) SDK Integration Tests (TypeScript)$(NC)"; \
+	echo "$(CYAN)════════════════════════════════════════$(NC)"; \
 	cd sdks/typescript && \
 	npm install && npm run build && \
 	OPENRAG_URL=http://localhost:3000 npm test || TEST_RESULT=1; \
 	cd ../..; \
-	echo "$(CYAN)=================================$(NC)"; \
+	echo "::endgroup::"; \
+	echo "$(CYAN)════════════════════════════════════════$(NC)"; \
 	echo ""; \
 	if [ $$TEST_RESULT -ne 0 ]; then \
 		echo "$(RED)=== Tests failed, dumping container logs ===$(NC)"; \
@@ -914,11 +957,12 @@ test-os-jwt: ## Test JWT authentication against OpenSearch
 	@$(call test_jwt_opensearch)
 
 test-sdk: ## Run SDK integration tests (requires running OpenRAG at localhost:3000)
-	@echo "$(YELLOW)Running SDK integration tests...$(NC)"
-	@echo "$(CYAN)Make sure OpenRAG is running at localhost:3000 (make dev)$(NC)"
-	@echo ""
-	@echo "$(PURPLE)Running Python SDK tests...$(NC)"
-	cd sdks/python && uv sync --extra dev && OPENRAG_URL=http://localhost:3000 uv run pytest tests/test_integration.py -vv -s
+	@echo "$(CYAN)════════════════════════════════════════$(NC)"
+	@echo "$(PURPLE) SDK Integration Tests (Python)$(NC)"
+	@echo "$(CYAN)════════════════════════════════════════$(NC)"
+	@echo "$(YELLOW)Make sure OpenRAG is running at localhost:3000 (make dev)$(NC)"
+	uv pip install -e sdks/python
+	SDK_TESTS_ONLY=true OPENRAG_URL=http://localhost:3000 uv run pytest tests/integration/sdk/ -vv -s
 	@echo ""
 	@echo "$(PURPLE)Running TypeScript SDK tests...$(NC)"
 	cd sdks/typescript && npm install && npm run build && OPENRAG_URL=http://localhost:3000 npm test

@@ -607,20 +607,21 @@ class ChatService:
             from agent import delete_user_conversation
             local_deleted = await delete_user_conversation(user_id, session_id)
 
-            # Delete from Langflow using the monitor API
+            if not local_deleted:
+                return {
+                    "success": False,
+                    "not_found": True,
+                    "error": "Conversation not found",
+                }
+
+            # Delete from Langflow using the monitor API (best-effort)
             langflow_deleted = await self._delete_langflow_session(session_id)
 
-            success = local_deleted or langflow_deleted
-            error_msg = None
-
-            if not success:
-                error_msg = "Session not found in local storage or Langflow"
-
             return {
-                "success": success,
+                "success": True,
                 "local_deleted": local_deleted,
                 "langflow_deleted": langflow_deleted,
-                "error": error_msg
+                "error": None,
             }
 
         except Exception as e:

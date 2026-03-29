@@ -78,7 +78,7 @@ def get_platform() -> str:
             with open("/proc/version", "r") as f:
                 if "microsoft" in f.read().lower():
                     return "WSL"
-        except:
+        except Exception:
             pass
         return "Linux"
     elif system == "Windows":
@@ -175,7 +175,7 @@ def docker_daemon_ready() -> bool:
             ["docker", "info"], capture_output=True, text=True, timeout=10
         )
         return result.returncode == 0
-    except:
+    except Exception:
         return False
 
 
@@ -186,12 +186,12 @@ def podman_ready() -> bool:
             ["podman", "info"], capture_output=True, text=True, timeout=10
         )
         return result.returncode == 0
-    except:
+    except Exception:
         return False
 
 
 def compose_available() -> bool:
-    """Check if docker compose or docker-compose is available."""
+    """Check if docker compose (v2) or docker-compose (v1) is available."""
     # Try docker compose (v2)
     try:
         result = subprocess.run(
@@ -199,10 +199,12 @@ def compose_available() -> bool:
         )
         if result.returncode == 0:
             return True
-    except:
+    except Exception:
         pass
     # Try docker-compose (v1)
-    return has_cmd("docker-compose")
+    if has_cmd("docker-compose"):
+        return True
+    return False
 
 
 # =============================================================================
@@ -271,7 +273,7 @@ def install_podman() -> bool:
             elif has_cmd("yum"):
                 subprocess.run(["sudo", "yum", "install", "-y", "podman"], check=True)
             elif has_cmd("pacman"):
-                subprocess.run(["sudo", "pacman", "-Sy", "--noconfirm", "podman"], check=True)
+                subprocess.run(["sudo", "pacman", "-Syu", "--noconfirm", "podman"], check=True)
             else:
                 say("Unknown package manager. Please install podman manually.")
                 return False
@@ -280,6 +282,69 @@ def install_podman() -> bool:
             say(f"Failed: {e}")
             return False
 
+    return False
+
+
+def install_podman_compose() -> bool:
+    """Install podman-compose standalone binary (provides required dependencies).
+
+    Installs even if 'podman compose' built-in is available, because the
+    standalone package ships dependencies that some environments need.
+    Returns True if successful or already installed.
+    """
+    if has_cmd("podman-compose"):
+        say(f"podman-compose already installed: {shutil.which('podman-compose')}")
+        return True
+
+    say("podman-compose not found.")
+    if not ask_yes_no("Install podman-compose?"):
+        return False
+
+    plat = get_platform()
+
+    if plat == "macOS":
+        if not install_homebrew():
+            say("Cannot install podman-compose without Homebrew.")
+            return False
+        say("Installing podman-compose via Homebrew...")
+        try:
+            subprocess.run(["brew", "install", "podman-compose"], check=True)
+            return True
+        except Exception as e:
+            say(f"Failed: {e}")
+            return False
+
+    elif plat in ("Linux", "WSL"):
+        say("Installing podman-compose (may prompt for sudo password)...")
+        # Prefer pip3 as it always has the latest version
+        if has_cmd("pip3"):
+            try:
+                subprocess.run(["pip3", "install", "--user", "podman-compose"], check=True)
+                local_bin = str(Path.home() / ".local" / "bin")
+                if local_bin not in os.environ.get("PATH", ""):
+                    os.environ["PATH"] = f"{local_bin}:{os.environ['PATH']}"
+                return True
+            except Exception as e:
+                say(f"pip3 install failed ({e}), trying package manager...")
+        try:
+            if has_cmd("apt-get"):
+                subprocess.run(["sudo", "apt-get", "update", "-y"], check=True)
+                subprocess.run(["sudo", "apt-get", "install", "-y", "podman-compose"], check=True)
+            elif has_cmd("dnf"):
+                subprocess.run(["sudo", "dnf", "install", "-y", "podman-compose"], check=True)
+            elif has_cmd("yum"):
+                subprocess.run(["sudo", "yum", "install", "-y", "podman-compose"], check=True)
+            elif has_cmd("pacman"):
+                subprocess.run(["sudo", "pacman", "-Syu", "--noconfirm", "podman-compose"], check=True)
+            else:
+                say("Unknown package manager. Please install podman-compose manually.")
+                return False
+            return True
+        except Exception as e:
+            say(f"Failed: {e}")
+            return False
+
+    say("Unsupported platform. Please install podman-compose manually.")
     return False
 
 
@@ -304,7 +369,7 @@ def install_docker_linux() -> bool:
         try:
             subprocess.run(["sudo", "usermod", "-aG", "docker", os.environ["USER"]], check=True)
             say("Added user to docker group. You may need to log out and back in.")
-        except:
+        except Exception:
             pass
         return True
     except Exception as e:
@@ -358,7 +423,7 @@ def setup_podman_machine() -> bool:
             capture_output=True, text=True, timeout=10
         )
         machine_exists = bool(result.stdout.strip())
-    except:
+    except Exception:
         machine_exists = False
 
     if not machine_exists:
@@ -413,14 +478,14 @@ def check_podman_machine_memory() -> Tuple[bool, int]:
         if result.returncode == 0 and result.stdout.strip():
             current_mb = int(result.stdout.strip())
             return current_mb >= MIN_PODMAN_MEMORY_MB, current_mb
-    except:
+    except Exception:
         pass
     return True, 0
 
 
 def fix_podman_memory(version: str) -> bool:
     """Recreate Podman machine with more memory."""
-    say(f"Podman machine has insufficient memory.")
+    say("Podman machine has insufficient memory.")
     if not ask_yes_no(f"Recreate machine with {MIN_PODMAN_MEMORY_MB}MB? (WARNING: deletes containers/images)"):
         return False
 
@@ -491,7 +556,7 @@ def check_storage_corruption(runtime: str) -> Tuple[bool, Optional[str]]:
         for pattern in corruption_patterns:
             if re.search(pattern, stderr, re.IGNORECASE):
                 return True, stderr
-    except:
+    except Exception:
         pass
     return False, None
 
@@ -641,7 +706,7 @@ def run_startup_checks() -> bool:
         match = re.search(r'(\d+\.\d+\.\d+)', result.stdout)
         if match:
             runtime_version = match.group(1)
-    except:
+    except Exception:
         pass
 
     say(f"Using {runtime}" + (f" {runtime_version}" if runtime_version else ""))
@@ -672,14 +737,16 @@ def run_startup_checks() -> bool:
             # User declined fix, but continue anyway
             pass
 
-    # 6. Check compose
-    if not compose_available():
+    # 6. Check / install compose
+    if runtime == "podman":
+        # Always ensure the standalone podman-compose binary is present —
+        # it installs required dependencies even when the built-in subcommand exists.
+        if not install_podman_compose() and not compose_available():
+            say("Warning: No compose tool found. OpenRAG will fail to start.")
+    elif not compose_available():
         say("Docker Compose not found.")
         say("OpenRAG requires docker-compose or 'docker compose'.")
-        if runtime == "podman":
-            say("Podman typically includes compose. Try: podman compose version")
-        else:
-            say("Install docker-compose-plugin via your package manager.")
+        say("Install docker-compose-plugin via your package manager.")
 
     print("-" * 40)
     say("Prerequisites check complete.")
