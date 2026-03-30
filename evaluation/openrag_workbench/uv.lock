@@ -1189,7 +1189,7 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.82.8"
+version = "1.82.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1205,9 +1205,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "tokenizers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f6/2c/731b614e6cee0bca1e010a36fd381fba69ee836fe3cb6753ba23ef2b9601/litellm-1.82.8.tar.gz", hash = "sha256:d39f4e7a218053cce976c91eacf184cf09a6960c731cc9d66d8e1a53406593a5", size = 17401988, upload-time = "2026-03-24T10:52:23.312Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/29/75/1c537aa458426a9127a92bc2273787b2f987f4e5044e21f01f2eed5244fd/litellm-1.82.6.tar.gz", hash = "sha256:2aa1c2da21fe940c33613aa447119674a3ad4d2ad5eb064e4d5ce5ee42420136", size = 17414147, upload-time = "2026-03-22T06:36:00.452Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fd/78/2167536f8859e655b28adf09ee7f4cd876745a933ba2be26853557775412/litellm-1.82.8-py3-none-any.whl", hash = "sha256:d2a0d5f564628773b6af7b9c11f6b86531a875bd2d186d7081ab62748a800ebb", size = 15675020, upload-time = "2026-03-24T10:52:19.426Z" },
+    { url = "https://files.pythonhosted.org/packages/02/6c/5327667e6dbe9e98cbfbd4261c8e91386a52e38f41419575854248bbab6a/litellm-1.82.6-py3-none-any.whl", hash = "sha256:164a3ef3e19f309e3cabc199bef3d2045212712fefdfa25fc7f75884a5b5b205", size = 15591595, upload-time = "2026-03-22T06:35:56.795Z" },
 ]
 
 [[package]]
@@ -1834,6 +1834,7 @@ name = "openrag-workbench"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "nicegui" },
     { name = "openai" },
     { name = "openrag-sdk" },
     { name = "pydantic" },
@@ -1854,6 +1855,7 @@ dev = [
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=26.1.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.14.0" },
+    { name = "nicegui", specifier = ">=1.0.0" },
     { name = "openai", specifier = ">=2.0.0" },
     { name = "openrag-sdk" },
     { name = "pydantic", specifier = ">=2.0.0" },
