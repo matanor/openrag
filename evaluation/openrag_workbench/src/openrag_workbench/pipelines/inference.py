@@ -164,12 +164,12 @@ class OpenRAGInference(InferencePipeline):
             # All settings are in the knowledge section, except index_name and openai_api_key which aren't returned
             mismatches = []
             for key, expected_value in settings_dict.items():
-                if key in ("openai_api_key"):
-                    # openai_api_key are not returned by the settings endpoint, skip verification
+                if key in ("index_name", "openai_api_key"):
+                    # index_name, openai_api_key are not returned by the settings endpoint, skip verification
                     continue
                 
                 # All other fields are in the knowledge section
-                actual_value = getattr(current_settings.knowledge, key, None)
+                actual_value = getattr(current_settings.agent, key, None)
                 if actual_value != expected_value:
                     mismatches.append(
                         f"{key}: expected={expected_value}, actual={actual_value}"
