@@ -34,6 +34,7 @@ metrics:
   - unitxt.context_correctness.mrr
   - unitxt.context_correctness.map
   - unitxt.answer_correctness.llmaaj_llama
+  - workbench.tool_use_count
 
 report:
   screens:
@@ -43,8 +44,14 @@ report:
       chart:
         type: bar
         title: Answer-correctness
+    - title: Tool Use Count
+      columns:
+        workbench.tool_use_count_mean: Tool Count
+      chart:
+        type: bar
+        title: Tool Use Count
     - title: Match@K
-      scores:
+      columns:
         unitxt.context_correctness.retrieval_at_k.match_at_1_mean: M@1
         unitxt.context_correctness.retrieval_at_k.match_at_3_mean: M@3
         unitxt.context_correctness.retrieval_at_k.match_at_5_mean: M@5
@@ -53,7 +60,7 @@ report:
         type: line
         title: Match@K
     - title: MAP & MRR
-      scores:
+      columns:
         unitxt.context_correctness.mrr_mean: MRR
         unitxt.context_correctness.map_mean: MAP
       chart:
