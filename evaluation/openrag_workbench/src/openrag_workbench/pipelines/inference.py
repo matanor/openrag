@@ -156,9 +156,36 @@ class OpenRAGInference(InferencePipeline):
             settings_options = SettingsUpdateOptions(**settings_dict)
             await sdk_client.settings.update(settings_options)
 
-            # Get updated settings to verify
-            settings_response = await sdk_client.settings.get()
-            logger.info(f"Configured settings via SDK: {settings_response}")
+            # Verify settings were applied correctly
+            logger.info("Verifying settings were applied correctly...")
+            current_settings = await sdk_client.settings.get()
+            
+            # Check each setting that was sent
+            # All settings are in the knowledge section, except index_name and openai_api_key which aren't returned
+            mismatches = []
+            for key, expected_value in settings_dict.items():
+                if key in ("openai_api_key"):
+                    # openai_api_key are not returned by the settings endpoint, skip verification
+                    continue
+                
+                # All other fields are in the knowledge section
+                actual_value = getattr(current_settings.knowledge, key, None)
+                if actual_value != expected_value:
+                    mismatches.append(
+                        f"{key}: expected={expected_value}, actual={actual_value}"
+                    )
+            
+            if mismatches:
+                error_msg = f"Settings verification failed. Mismatches: {', '.join(mismatches)}"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+            
+            logger.info("Settings verification successful - all values match.")
+            
+            # Wait for settings to propagate through the system
+            logger.info("Waiting 90 seconds for settings to propagate...")
+            await asyncio.sleep(90)
+            logger.info("Settings propagation wait complete.")
 
     def process_no_cache(self, benchmark_entry: RagBenchmarkEntry) -> InferenceResult:
         """
