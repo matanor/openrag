@@ -15,7 +15,10 @@ async def add_provider_credentials_to_headers(headers: Dict[str, str], config, f
     # Add OpenAI credentials
     if config.providers.openai.api_key:
         headers["X-LANGFLOW-GLOBAL-VAR-OPENAI_API_KEY"] = str(config.providers.openai.api_key)
-    
+
+    if config.providers.openai.endpoint:
+        headers["X-LANGFLOW-GLOBAL-VAR-OPENAI_API_BASE"] = str(config.providers.openai.endpoint)
+
     # Add Anthropic credentials
     if config.providers.anthropic.api_key:
         headers["X-LANGFLOW-GLOBAL-VAR-ANTHROPIC_API_KEY"] = str(config.providers.anthropic.api_key)
@@ -51,6 +54,9 @@ async def build_mcp_global_vars_from_config(config, flows_service=None) -> Dict[
     # Add OpenAI credentials
     if config.providers.openai.api_key:
         global_vars["OPENAI_API_KEY"] = config.providers.openai.api_key
+    
+    if config.providers.openai.endpoint:
+        global_vars["OPENAI_API_BASE"] = config.providers.openai.endpoint
     
     # Add Anthropic credentials
     if config.providers.anthropic.api_key:

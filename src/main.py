@@ -65,6 +65,7 @@ from api.v1 import (
     settings as v1_settings,
     models as v1_models,
     knowledge_filters as v1_knowledge_filters,
+    onboarding as v1_onboarding,
 )
 
 # Configuration and setup
@@ -1714,6 +1715,12 @@ async def create_app():
         methods=["DELETE"],
         tags=["public"],
     )
+    app.add_api_route(
+        "/v1/documents/check-filename", 
+        v1_documents.check_filename_exists_endpoint, 
+        methods=["GET"], 
+        tags=["public"]
+    )
 
     # Settings endpoints
     app.add_api_route(
@@ -1767,6 +1774,14 @@ async def create_app():
         v1_knowledge_filters.delete_endpoint,
         methods=["DELETE"],
         tags=["public"],
+    )
+
+    # Onboarding endpoint
+    app.add_api_route(
+        "/v1/onboarding", 
+        v1_onboarding.onboarding_endpoint, 
+        methods=["POST"], 
+        tags=["public"]
     )
 
     # Add startup event handler
