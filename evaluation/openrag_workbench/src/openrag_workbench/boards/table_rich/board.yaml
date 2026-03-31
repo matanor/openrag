@@ -39,7 +39,7 @@ metrics:
 report:
   screens:
     - title: Answer-Correctness
-      scores:
+      columns:
         unitxt.answer_correctness.llmaaj_llama_mean: AC
       chart:
         type: bar
