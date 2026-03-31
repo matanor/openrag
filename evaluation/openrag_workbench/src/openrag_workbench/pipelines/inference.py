@@ -5,6 +5,8 @@ import logging
 import traceback
 from typing import Any
 
+from ragworkbench.boards.board_model import CacheMode
+
 from openrag_sdk import ContentEvent, DoneEvent, OpenRAGClient, SourcesEvent
 from openrag_sdk.models import SettingsUpdateOptions
 from pydantic import BaseModel, Field
@@ -50,6 +52,7 @@ class OpenRAGInference(InferencePipeline):
         self,
         params: OpenRAGInferenceParams,
         cache_dir: str | None = None,
+        cache_mode : CacheMode = CacheMode.ON,
     ) -> None:
         """
         Initialize OpenRAG inference pipeline.
@@ -58,7 +61,7 @@ class OpenRAGInference(InferencePipeline):
             params: OpenRAG inference parameters
             cache_dir: Optional directory for caching generation results
         """
-        super().__init__(params, cache_dir=cache_dir)
+        super().__init__(params, cache_dir=cache_dir, cache_mode=cache_mode)
         self.params: OpenRAGInferenceParams = params
         self._ingest_artifact: OpenRAGIngestArtifact | None = None
 
