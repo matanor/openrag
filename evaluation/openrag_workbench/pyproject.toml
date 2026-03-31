@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openrag-workbench"
-version = "0.1.1"
+version = "0.1.2"
 description = "OpenRAG Workbench Tool"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -22,7 +22,7 @@ classifiers = [
 
 dependencies = [
     "openrag-sdk",
-    "ragworkbench==0.1.1",
+    "ragworkbench==0.1.2",
     "pydantic>=2.0.0",
     "python-dotenv>=1.0.0",
     "openai>=2.0.0",
