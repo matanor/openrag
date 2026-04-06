@@ -345,7 +345,7 @@ class OpenRAGInference(InferencePipeline):
 
                     if openrag_answer.partial_answer and attempt < max_retries:
                         raise RuntimeError(
-                            "Partial answer received before final retry attempt; retrying"
+                            f"Partial answer received in attemot {attempt}, before final retry attempt; retrying"
                         )
 
                     return openrag_answer
