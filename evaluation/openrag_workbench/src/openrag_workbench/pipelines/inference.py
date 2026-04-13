@@ -11,12 +11,22 @@ from pydantic import BaseModel, Field
 from ragworkbench.api.inference import InferenceParams, InferencePipeline
 from ragworkbench.api.inference_result import InferenceResult, Trajectory
 from ragworkbench.api.ingest_artifact import IngestArtifact
+from ragworkbench.boards.board_model import CacheMode
 from ragworkbench.boards.board_registry import inference_pipeline
 from ragworkbench.datasets_loader.data_models import RagBenchmarkEntry
 
 from openrag_workbench.pipelines.ingest import OpenRAGIngestArtifact
 
 logger = logging.getLogger(__name__)
+
+
+class OpenRagAnswer(BaseModel):
+    """Structured answer returned from OpenRAG streaming inference."""
+
+    answer: str
+    context_ids: list[str]
+    trajectory: Trajectory | None = None
+    partial_answer: bool = False
 
 
 class GenerativeModelParams(BaseModel):
@@ -50,6 +60,7 @@ class OpenRAGInference(InferencePipeline):
         self,
         params: OpenRAGInferenceParams,
         cache_dir: str | None = None,
+        cache_mode: CacheMode = CacheMode.ON,
     ) -> None:
         """
         Initialize OpenRAG inference pipeline.
@@ -57,8 +68,9 @@ class OpenRAGInference(InferencePipeline):
         Args:
             params: OpenRAG inference parameters
             cache_dir: Optional directory for caching generation results
+            cache_mode: Cache operation mode (on/off/refresh)
         """
-        super().__init__(params, cache_dir=cache_dir)
+        super().__init__(params, cache_dir=cache_dir, cache_mode=cache_mode)
         self.params: OpenRAGInferenceParams = params
         self._ingest_artifact: OpenRAGIngestArtifact | None = None
 
@@ -138,16 +150,51 @@ class OpenRAGInference(InferencePipeline):
 
         # Use SDK client for LLM configuration and index_name (URL from environment)
         async with OpenRAGClient(timeout=self.params.timeout) as sdk_client:
-            settings_options = SettingsUpdateOptions(
-                llm_provider=self.params.generative_model.provider_id,
-                llm_model=self.params.generative_model.model_id,
-                index_name=artifact.index_name,
-            )
+            settings_dict = {
+                "llm_provider": self.params.generative_model.provider_id,
+                "llm_model": self.params.generative_model.model_id,
+                "index_name": artifact.index_name,
+            }
+            
+            # Add tracking API key if provided (for cost tracking)
+            if self.params.tracking_api_key:
+                settings_dict["openai_api_key"] = self.params.tracking_api_key
+                logger.info("Set tracking API key for cost tracking")
+            
+            logger.info(f"Updating settings with: {settings_dict}")
+            settings_options = SettingsUpdateOptions(**settings_dict)
             await sdk_client.settings.update(settings_options)
 
-            # Get updated settings to verify
-            settings_response = await sdk_client.settings.get()
-            logger.info(f"Configured settings via SDK: {settings_response}")
+            # Verify settings were applied correctly
+            logger.info("Verifying settings were applied correctly...")
+            current_settings = await sdk_client.settings.get()
+            
+            # Check each setting that was sent
+            # All settings are in the knowledge section, except index_name and openai_api_key which aren't returned
+            mismatches = []
+            for key, expected_value in settings_dict.items():
+                if key in ("index_name", "openai_api_key"):
+                    # index_name, openai_api_key are not returned by the settings endpoint, skip verification
+                    continue
+                
+                # All other fields are in the knowledge section
+                actual_value = getattr(current_settings.agent, key, None)
+                if actual_value != expected_value:
+                    mismatches.append(
+                        f"{key}: expected={expected_value}, actual={actual_value}"
+                    )
+            
+            if mismatches:
+                error_msg = f"Settings verification failed. Mismatches: {', '.join(mismatches)}"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+            
+            logger.info("Settings verification successful - all values match.")
+            
+            # Wait for settings to propagate through the system
+            logger.info("Waiting 90 seconds for settings to propagate...")
+            await asyncio.sleep(90)
+            logger.info("Settings propagation wait complete.")
 
     def process_no_cache(self, benchmark_entry: RagBenchmarkEntry) -> InferenceResult:
         """
@@ -168,22 +215,25 @@ class OpenRAGInference(InferencePipeline):
         logger.debug(f"Processing question: {question}")
 
         # Perform inference using async SDK client
-        answer, context_ids, trajectory = asyncio.run(
-            self._infer_single_async(question)
-        )
+        openrag_answer = asyncio.run(self._infer_single_async(question))
+
+        if openrag_answer.partial_answer:
+            logger.warning(
+                "Returning inference result with partial answer due to interrupted stream"
+            )
 
         # Build inference result
         return InferenceResult(
-            answer=answer,
-            context_ids=context_ids,
-            trajectory=trajectory,
+            answer=openrag_answer.answer,
+            context_ids=openrag_answer.context_ids,
+            trajectory=openrag_answer.trajectory,
             **benchmark_entry.model_dump(),
         )
 
     @staticmethod
     async def _stream_chat_response(
         sdk_client: OpenRAGClient, question: str
-    ) -> tuple[str, list[dict[str, Any]]]:
+    ) -> OpenRagAnswer:
         """
         Stream chat response from SDK client and parse events.
 
@@ -192,47 +242,72 @@ class OpenRAGInference(InferencePipeline):
             question: The question to ask
 
         Returns:
-            Tuple of (answer, trajectory)
+            Structured answer with answer text, context ids, trajectory, and partial flag
         """
         # Stream the chat response
         answer_parts = []
+        context_ids: list[str] = []
         trajectory: list[dict[str, Any]] = []
+        is_partial_answer = False
 
         # Use async context manager to properly initialize the stream
         async with sdk_client.chat.stream(message=question) as stream:
-            async for event in stream:
-                # Log each event received
-                logger.debug(f"Received event: {type(event).__name__} - {event}")
+            try:
+                async for event in stream:
+                    # Log each event received
+                    logger.debug(f"Received event: {type(event).__name__} - {event}")
 
-                # Handle different event types from the stream
-                if isinstance(event, ContentEvent):
-                    # Content event contains the answer text (delta field)
-                    answer_parts.append(event.delta)
-                elif isinstance(event, SourcesEvent):
-                    # Sources event contains retrieved documents
-                    # Each SourcesEvent represents a query's results
-                    current_sources = [
-                        {"filename": source.filename, "text": source.text}
-                        for source in event.sources
-                    ]
-                    # Add this query's results to the list
-                    # Use the query field from the SourcesEvent
-                    trajectory.append(
-                        {
-                            "query": event.query,
-                            "results": current_sources,
-                        }
+                    # Handle different event types from the stream
+                    if isinstance(event, ContentEvent):
+                        # Content event contains the answer text (delta field)
+                        answer_parts.append(event.delta)
+                    elif isinstance(event, SourcesEvent):
+                        # Sources event contains retrieved documents
+                        # Each SourcesEvent represents a query's results
+                        current_sources = [
+                            {"filename": source.filename, "text": source.text}
+                            for source in event.sources
+                        ]
+                        context_ids.extend(
+                            source.filename
+                            for source in event.sources
+                            if source.filename
+                        )
+                        # Add this query's results to the list
+                        # Use the query field from the SourcesEvent
+                        trajectory.append(
+                            {
+                                "query": event.query,
+                                "results": current_sources,
+                            }
+                        )
+                    elif isinstance(event, DoneEvent):
+                        # Done event signals completion
+                        logger.debug("Stream completed")
+            except Exception as exc:
+                partial_answer_text = "".join(answer_parts)
+                if partial_answer_text or trajectory:
+                    is_partial_answer = True
+                    logger.warning(
+                        "Stream interrupted; returning partial response. "
+                        f"error={exc}, partial_answer_length={len(partial_answer_text)}, "
+                        f"trajectory_count={len(trajectory)}, "
+                        f"partial_answer=\n{partial_answer_text}\n"
                     )
-                elif isinstance(event, DoneEvent):
-                    # Done event signals completion
-                    logger.debug("Stream completed")
+                else:
+                    raise
 
         answer = "".join(answer_parts)
-        return answer, trajectory
+        return OpenRagAnswer(
+            answer=answer,
+            context_ids=context_ids,
+            trajectory=trajectory,
+            partial_answer=is_partial_answer,
+        )
 
     async def _infer_single_async(
         self, question: str
-    ) -> tuple[str, list[str], Trajectory | None]:
+    ) -> OpenRagAnswer:
         """
         Perform inference for a single question using SDK client.
 
@@ -240,7 +315,7 @@ class OpenRAGInference(InferencePipeline):
             question: The question to answer
 
         Returns:
-            Tuple of (answer, context_ids, trajectory)
+            Structured answer with answer text, context ids, trajectory, and partial flag
         """
         if self._ingest_artifact is None:
             raise RuntimeError(
@@ -256,24 +331,24 @@ class OpenRAGInference(InferencePipeline):
 
                 # Use SDK client for chat/inference (URL from environment)
                 async with OpenRAGClient(timeout=self.params.timeout) as sdk_client:
-                    answer, trajectory = await self._stream_chat_response(
+                    openrag_answer = await self._stream_chat_response(
                         sdk_client, question
                     )
 
-                    context_ids = [
-                        result["filename"]
-                        for query_result in trajectory
-                        for result in query_result["results"]
-                    ]
-
-                    # Check for common invalid answer patterns
-                    if self._is_invalid_answer(answer):
+                    # Check for common invalid answer patterns, only on non-partial answers. 
+                    # Partial answers may be empty and that is ok.
+                    if not openrag_answer.partial_answer and self._is_invalid_answer(openrag_answer.answer):
                         raise ValueError(
-                            f"Invalid answer detected: '{answer[:100]}...'. "
+                            f"Invalid answer detected: '{openrag_answer.answer[:100]}'.... "
                             "Answer appears to be an error message or non-response."
                         )
 
-                    return answer, context_ids, trajectory
+                    if openrag_answer.partial_answer and attempt < max_retries:
+                        raise RuntimeError(
+                            f"Partial answer received in attemot {attempt}, before final retry attempt; retrying"
+                        )
+
+                    return openrag_answer
 
             except Exception as e:
                 logger.error(

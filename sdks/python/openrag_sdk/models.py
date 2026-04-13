@@ -189,6 +189,7 @@ class SettingsUpdateOptions(BaseModel):
     ocr: bool | None = None
     picture_descriptions: bool | None = None
     index_name: str | None = None
+    openai_api_key: str | None = None
 
 
 class SettingsUpdateResponse(BaseModel):

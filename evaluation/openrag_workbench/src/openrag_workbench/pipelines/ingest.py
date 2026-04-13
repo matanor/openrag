@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import time
 from typing import Any, cast
 
 from openrag_sdk import OpenRAGClient
@@ -37,8 +38,8 @@ class OpenRAGIngestParams(IngestParams):
     embedding_model: EmbeddingModelParams = Field(
         description="Embedding model configuration"
     )
-    chunking: ChunkingParams | None = Field(
-        default=None, description="Chunking configuration"
+    chunking: ChunkingParams = Field(
+        default_factory=ChunkingParams, description="Chunking configuration"
     )
     timeout: float = Field(
         default=300.0,
@@ -111,22 +112,49 @@ class OpenRAGIngest(IngestPipeline):
         """Update OpenRAG settings with chunking and index configuration using SDK."""
         logger.info(f"Updating settings for index: '{index_name}'")
 
-        # Build settings update options
         settings_dict: dict[str, Any] = {
             "embedding_provider": self.params.embedding_model.provider_id,
             "embedding_model": self.params.embedding_model.model_id,
             "index_name": index_name,
+            "chunk_size": self.params.chunking.chunk_size,
+            "chunk_overlap": self.params.chunking.chunk_overlap,
         }
 
-        if self.params.chunking:
-            settings_dict["chunk_size"] = self.params.chunking.chunk_size
-            settings_dict["chunk_overlap"] = self.params.chunking.chunk_overlap
+        # Add API key if available
+        if self._params.tracking_api_key:
+            settings_dict["openai_api_key"] = self._params.tracking_api_key
 
         # Use SDK to update settings
+        logger.info(f"Updating settings to: {settings_dict}")
         options = SettingsUpdateOptions(**settings_dict)
-        logger.info(f"Updating settings to {options}..")
         await sdk_client.settings.update(options)
         logger.info("Settings update completed.")
+
+        # Verify settings were applied correctly
+        logger.info("Verifying settings were applied correctly...")
+        current_settings = await sdk_client.settings.get()
+        
+        # Check each setting that was sent
+        # All settings are in the knowledge section, except index_name which isn't returned
+        mismatches = []
+        for key, expected_value in settings_dict.items():
+            if key in ("index_name", "openai_api_key"):
+                # index_name and openai_api_key are not returned by the settings endpoint, skip verification
+                continue
+            
+            # All other fields are in the knowledge section
+            actual_value = getattr(current_settings.knowledge, key, None)
+            if actual_value != expected_value:
+                mismatches.append(
+                    f"{key}: expected={expected_value}, actual={actual_value}"
+                )
+        
+        if mismatches:
+            error_msg = f"Settings verification failed. Mismatches: {', '.join(mismatches)}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        logger.info("Settings verification successful - all values match.")
 
     async def _onboard(self, sdk_client: OpenRAGClient) -> None:
         """Onboard with embedding model configuration using SDK.
@@ -205,6 +233,7 @@ class OpenRAGIngest(IngestPipeline):
             logger.info(
                 f"Ingesting document {i}/{num_documents_to_index}: {document.name}"
             )
+            start_time = time.time()
             try:
                 # Reset stream position before ingestion
                 document.stream.seek(0)
@@ -224,21 +253,27 @@ class OpenRAGIngest(IngestPipeline):
                 # Cast to IngestTaskStatus since wait=True
                 task_status = cast(IngestTaskStatus, result)
 
+                # Calculate elapsed time
+                elapsed_time = time.time() - start_time
+
                 # Check if ingestion was successful
                 if task_status.status == "failed" or task_status.failed_files > 0:
                     logger.error(
                         f"Failed to ingest {document.name}: "
                         f"status={task_status.status}, "
-                        f"failed_files={task_status.failed_files}/{task_status.total_files}"
+                        f"failed_files={task_status.failed_files}/{task_status.total_files}, "
+                        f"time={elapsed_time:.2f}s"
                     )
                     num_failures += 1
                 else:
                     logger.info(
                         f"Successfully ingested {document.name}: "
-                        f"processed={task_status.processed_files}/{task_status.total_files}"
+                        f"processed={task_status.processed_files}/{task_status.total_files}, "
+                        f"time={elapsed_time:.2f}s"
                     )
             except Exception as e:
-                logger.error(f"Error ingesting {document.name}: {e}")
+                elapsed_time = time.time() - start_time
+                logger.error(f"Error ingesting {document.name}: {e}, time={elapsed_time:.2f}s")
                 num_failures += 1
 
         return num_failures
@@ -251,9 +286,7 @@ class OpenRAGIngest(IngestPipeline):
         file_names = [document.name for document in rag_corpus.documents]
         file_names_sorted = sorted(file_names)
 
-        chunking_dump = ""
-        if self.params.chunking:
-            chunking_dump = self.params.chunking.model_dump_json()
+        chunking_dump = self.params.chunking.model_dump_json()
 
         index_config = {
             "chunking": chunking_dump,
