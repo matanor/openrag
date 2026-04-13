@@ -53,8 +53,6 @@ import {
   DEFAULT_KNOWLEDGE_SETTINGS,
   UI_CONSTANTS,
 } from "@/lib/constants";
-import { useDebounce } from "@/lib/debounce";
-import { cn } from "@/lib/utils";
 import { useUpdateSettingsMutation } from "../api/mutations/useUpdateSettingsMutation";
 import { ModelSelector } from "../onboarding/_components/model-selector";
 import ConnectorCards from "./_components/connector-cards";
@@ -84,6 +82,9 @@ function KnowledgeSourcesPage() {
   const [systemPrompt, setSystemPrompt] = useState<string>("");
   const [chunkSize, setChunkSize] = useState<number>(1024);
   const [chunkOverlap, setChunkOverlap] = useState<number>(50);
+  const [chunkValidationError, setChunkValidationError] = useState<
+    string | null
+  >(null);
   const [tableStructure, setTableStructure] = useState<boolean>(true);
   const [ocr, setOcr] = useState<boolean>(false);
   const [pictureDescriptions, setPictureDescriptions] =
@@ -252,14 +253,6 @@ function KnowledgeSourcesPage() {
     },
   });
 
-  // Debounced update function
-  const debouncedUpdate = useDebounce(
-    (variables: Parameters<typeof updateSettingsMutation.mutate>[0]) => {
-      updateSettingsMutation.mutate(variables);
-    },
-    500,
-  );
-
   // Sync system prompt state with settings data
   useEffect(() => {
     if (settings.agent?.system_prompt) {
@@ -298,6 +291,14 @@ function KnowledgeSourcesPage() {
       setPictureDescriptions(settings.knowledge.picture_descriptions);
     }
   }, [settings.knowledge?.picture_descriptions]);
+
+  const k = settings.knowledge;
+  const knowledgeIngestDirty =
+    chunkSize !== (k?.chunk_size ?? chunkSize) ||
+    chunkOverlap !== (k?.chunk_overlap ?? chunkOverlap) ||
+    tableStructure !== (k?.table_structure ?? tableStructure) ||
+    ocr !== (k?.ocr ?? ocr) ||
+    pictureDescriptions !== (k?.picture_descriptions ?? pictureDescriptions);
 
   // Handle auto-focus on LLM model selector when coming from provider setup
   useEffect(() => {
@@ -340,7 +341,6 @@ function KnowledgeSourcesPage() {
     updateSettingsMutation.mutate({ system_prompt: systemPrompt });
   };
 
-  // Update embedding model selection immediately (also updates provider)
   const handleEmbeddingModelChange = (newModel: string, provider?: string) => {
     if (newModel && provider) {
       updateSettingsMutation.mutate({
@@ -352,34 +352,55 @@ function KnowledgeSourcesPage() {
     }
   };
 
-  // Update chunk size setting with debounce
   const handleChunkSizeChange = (value: string) => {
-    const numValue = Math.max(0, parseInt(value) || 0);
+    const numValue = Math.max(0, Number.parseInt(value, 10) || 0);
     setChunkSize(numValue);
-    debouncedUpdate({ chunk_size: numValue });
+    setChunkValidationError(null);
   };
 
-  // Update chunk overlap setting with debounce
   const handleChunkOverlapChange = (value: string) => {
-    const numValue = Math.max(0, parseInt(value) || 0);
+    const numValue = Math.max(0, Number.parseInt(value, 10) || 0);
     setChunkOverlap(numValue);
-    debouncedUpdate({ chunk_overlap: numValue });
+    setChunkValidationError(null);
   };
 
-  // Update docling settings
+  const handleKnowledgeIngestSave = () => {
+    if (chunkSize < 1) {
+      const msg = "Chunk size must be at least 1";
+      setChunkValidationError(msg);
+      toast.error("Could not save ingest settings", { description: msg });
+      return;
+    }
+    if (chunkOverlap >= chunkSize) {
+      const msg = "Chunk overlap must be less than chunk size";
+      setChunkValidationError(msg);
+      toast.error("Could not save ingest settings", { description: msg });
+      return;
+    }
+    updateSettingsMutation.mutate(
+      {
+        chunk_size: chunkSize,
+        chunk_overlap: chunkOverlap,
+        table_structure: tableStructure,
+        ocr,
+        picture_descriptions: pictureDescriptions,
+      },
+      {
+        onSuccess: () => setChunkValidationError(null),
+      },
+    );
+  };
+
   const handleTableStructureChange = (checked: boolean) => {
     setTableStructure(checked);
-    updateSettingsMutation.mutate({ table_structure: checked });
   };
 
   const handleOcrChange = (checked: boolean) => {
     setOcr(checked);
-    updateSettingsMutation.mutate({ ocr: checked });
   };
 
   const handlePictureDescriptionsChange = (checked: boolean) => {
     setPictureDescriptions(checked);
-    updateSettingsMutation.mutate({ picture_descriptions: checked });
   };
 
   // API Keys handlers
@@ -518,6 +539,7 @@ function KnowledgeSourcesPage() {
         setTableStructure(false);
         setOcr(false);
         setPictureDescriptions(false);
+        setChunkValidationError(null);
         closeDialog(); // Close after successful completion
       })
       .catch((error) => {
@@ -873,15 +895,16 @@ function KnowledgeSourcesPage() {
             </div>
           </div>
           <CardDescription>
-            Configure how files are ingested and stored for retrieval. Edit in
-            Langflow for full control.
+            Configure how files are ingested and stored for retrieval. The
+            embedding model saves as soon as you pick one; chunk and ingest
+            options use Save ingest settings. Edit in Langflow for full control.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
             <div className="space-y-2">
               <LabelWrapper
-                helperText="Model used for knowledge ingest and retrieval"
+                helperText="Saves immediately when you select a model"
                 id="embedding-model-select"
                 label="Embedding model"
                 required={true}
@@ -908,7 +931,7 @@ function KnowledgeSourcesPage() {
                       min="1"
                       value={chunkSize}
                       onChange={(e) => handleChunkSizeChange(e.target.value)}
-                      className="w-full pr-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className={`w-full pr-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none${chunkValidationError ? " border-destructive" : ""}`}
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center">
                       <span className="text-sm text-placeholder-foreground mr-4 pointer-events-none">
@@ -951,7 +974,7 @@ function KnowledgeSourcesPage() {
                       min="0"
                       value={chunkOverlap}
                       onChange={(e) => handleChunkOverlapChange(e.target.value)}
-                      className="w-full pr-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className={`w-full pr-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none${chunkValidationError ? " border-destructive" : ""}`}
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center">
                       <span className="text-sm text-placeholder-foreground mr-4 pointer-events-none">
@@ -988,6 +1011,11 @@ function KnowledgeSourcesPage() {
                     </div>
                   </div>
                 </LabelWrapper>
+                {chunkValidationError && (
+                  <p className="text-sm text-destructive mt-1" role="alert">
+                    {chunkValidationError}
+                  </p>
+                )}
               </div>
             </div>
             <div className="">
@@ -1046,6 +1074,26 @@ function KnowledgeSourcesPage() {
                   onCheckedChange={handlePictureDescriptionsChange}
                 />
               </div>
+            </div>
+            <div className="flex justify-end pt-2">
+              <Button
+                onClick={handleKnowledgeIngestSave}
+                disabled={
+                  updateSettingsMutation.isPending || !knowledgeIngestDirty
+                }
+                className="min-w-[120px]"
+                size="sm"
+                variant="outline"
+              >
+                {updateSettingsMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save ingest settings"
+                )}
+              </Button>
             </div>
           </div>
         </CardContent>

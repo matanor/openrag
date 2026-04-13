@@ -32,6 +32,8 @@ wheels/
 
 # OpenSearch data directory
 opensearch-data/
+# Langflow data directory
+langflow-data/
 
 node_modules
 

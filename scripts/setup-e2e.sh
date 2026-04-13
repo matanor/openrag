@@ -49,6 +49,11 @@ echo "Starting E2E Setup using $E2E_ENV..."
 echo "Cleaning up..."
 make factory-reset FORCE=true ENV_FILE=$E2E_ENV
 
+# Pre-create langflow-data as world-writable so the Langflow container (UID 1000)
+# and the runner (UID 1001) can both access it, regardless of Docker's :U flag behavior.
+mkdir -p langflow-data
+chmod 777 langflow-data
+
 # Start infrastructure using make (this will use the new .env)
 echo "Starting infrastructure..."
 make dev-local-cpu ENV_FILE=$E2E_ENV

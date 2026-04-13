@@ -70,6 +70,15 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Failure Colors */
+    --failure-soft: #dc26261a;
+    --failure-pill: #fb2c361a;
+    --failure-file: hsl(var(--foreground));
+    --failure-log: hsl(var(--destructive));
+    --failure-message: hsl(var(--foreground));
+    --failure-scroll: #ff6464;
+    --failure-muted: #a66262;
   }
 
   .dark {
@@ -120,6 +129,15 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Failure Colors */
+    --failure-soft: #46080933;
+    --failure-pill: #fb2c361a;
+    --failure-file: #ffa2a2;
+    --failure-log: #ff6467;
+    --failure-message: #ffc9c9cc;
+    --failure-scroll: #ff6464;
+    --failure-muted: #a66262;
   }
 
   * {

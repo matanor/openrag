@@ -124,7 +124,7 @@ export function TaskErrorContent({
                       key={`${task.task_id}-${filePath}-${index}`}
                       className="space-y-1"
                     >
-                      <p className="text-xs text-failure-file truncate">
+                      <p className="text-xs text-failure-file font-semibold truncate">
                         {">"} {fileName}
                       </p>
                       <p className="text-xs text-failure-message break-words">

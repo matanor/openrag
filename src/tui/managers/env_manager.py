@@ -95,6 +95,7 @@ class EnvConfig:
     openrag_config_path: str = "$HOME/.openrag/config"
     openrag_data_path: str = "$HOME/.openrag/data"  # Backend data (conversations, tokens, etc.)
     opensearch_data_path: str = "$HOME/.openrag/data/opensearch-data"
+    langflow_data_path: str = "$HOME/.openrag/data/langflow-data"
     openrag_tui_config_path_legacy: str = "$HOME/.openrag/tui/config"
 
     # Container version (linked to TUI version)
@@ -212,6 +213,7 @@ class EnvManager:
             "OPENRAG_CONFIG_PATH": "openrag_config_path",
             "OPENRAG_DATA_PATH": "openrag_data_path",
             "OPENSEARCH_DATA_PATH": "opensearch_data_path",
+            "LANGFLOW_DATA_PATH": "langflow_data_path",
             "LANGFLOW_AUTO_LOGIN": "langflow_auto_login",
             "LANGFLOW_NEW_USER_IS_ACTIVE": "langflow_new_user_is_active",
             "LANGFLOW_ENABLE_SUPERUSER_CLI": "langflow_enable_superuser_cli",
@@ -491,6 +493,9 @@ class EnvManager:
                 )
                 f.write(
                     f"OPENSEARCH_DATA_PATH={self._quote_env_value(expand_path(self.config.opensearch_data_path))}\n"
+                )
+                f.write(
+                    f"LANGFLOW_DATA_PATH={self._quote_env_value(expand_path(self.config.langflow_data_path))}\n"
                 )
                 # Set OPENRAG_VERSION to TUI version
                 if self.config.openrag_version:

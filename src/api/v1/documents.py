@@ -103,7 +103,7 @@ async def check_filename_exists_endpoint(
     from utils.opensearch_queries import build_filename_search_body
 
     try:
-        opensearch_client = session_manager.get_user_opensearch_client(user.user_id, None)
+        opensearch_client = session_manager.get_user_opensearch_client(user.user_id, user.jwt_token)
         search_body = build_filename_search_body(filename, size=1, source=["filename"])
 
         logger.debug("Checking filename existence", filename=filename, index_name=get_index_name())

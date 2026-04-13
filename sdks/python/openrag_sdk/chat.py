@@ -492,11 +492,16 @@ class ChatClient:
             chat_id: The ID of the conversation to delete.
 
         Returns:
-            True if deletion was successful.
+            True if deletion was successful, False if the conversation was not found.
         """
-        response = await self._client._request("DELETE", f"/api/v1/chat/{chat_id}")
-        data = response.json()
-        return data.get("success", False)
+        from .exceptions import NotFoundError
+
+        try:
+            response = await self._client._request("DELETE", f"/api/v1/chat/{chat_id}")
+            data = response.json()
+            return data.get("success", False)
+        except NotFoundError:
+            return False
 
 
 # Import Literal for type hints

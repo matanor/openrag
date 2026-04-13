@@ -538,25 +538,28 @@ class MonitorScreen(Screen):
 
     async def _factory_reset_with_data_clear(self) -> AsyncIterator[tuple[bool, str]]:
         """Generator that stops services and clears opensearch data."""
+        import shutil
+
         # First stop all services
         async for success, message in self.container_manager.reset_services():
             yield success, message
             if not success and "failed" in message.lower():
                 return
-        
-        # Now clear opensearch-data using container
-        yield False, "Clearing OpenSearch data..."
-        # Get opensearch data path from env config
+
+        # Get data paths from env config
         from ..managers.env_manager import EnvManager
         env_manager = EnvManager()
         env_manager.load_existing_env()
+
+        # Clear opensearch-data using container
+        yield False, "Clearing OpenSearch data..."
         opensearch_data_path = Path(env_manager.config.opensearch_data_path.replace("$HOME", str(Path.home()))).expanduser()
         if opensearch_data_path.exists():
             async for success, message in self.container_manager.clear_opensearch_data_volume():
                 yield success, message
                 if not success and "failed" in message.lower():
                     return
-            
+
             # Recreate empty opensearch-data directory
             try:
                 opensearch_data_path.mkdir(parents=True, exist_ok=True)
@@ -564,7 +567,23 @@ class MonitorScreen(Screen):
             except Exception as e:
                 yield False, f"Error recreating opensearch-data directory: {e}"
                 return
-        
+
+        # Delete langflow-data directory (mirrors Makefile factory-reset behaviour)
+        yield False, "Clearing Langflow data..."
+        from tui.main import _resolve_langflow_data_path
+        langflow_data_path = _resolve_langflow_data_path(Path.home() / ".openrag").resolve()
+        home = Path.home().resolve()
+        if not str(langflow_data_path).startswith(str(home) + "/"):
+            yield False, f"Refusing to delete path outside home directory: {langflow_data_path}"
+            return
+        if langflow_data_path.exists():
+            try:
+                shutil.rmtree(langflow_data_path)
+                yield True, "Langflow data directory removed"
+            except Exception as e:
+                yield False, f"Error removing langflow-data directory: {e}"
+                return
+
         yield True, "Factory reset completed successfully"
 
     async def _prune_images(self) -> None:

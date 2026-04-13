@@ -92,6 +92,12 @@ CONFIG_SECTIONS: list[ConfigSection] = [
             placeholder="admin", default="admin",
         ),
         ConfigField(
+            "langflow_data_path", "LANGFLOW_DATA_PATH", "Data Path",
+            placeholder="~/.openrag/data/langflow-data",
+            default="$HOME/.openrag/data/langflow-data",
+            helper_text="Directory to persist Langflow flows and state across restarts",
+        ),
+        ConfigField(
             "langflow_public_url", "LANGFLOW_PUBLIC_URL", "Public URL",
             placeholder="http://localhost:7860",
             helper_text="External URL for Langflow access",

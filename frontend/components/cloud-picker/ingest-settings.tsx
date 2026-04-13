@@ -115,8 +115,7 @@ export const IngestSettings = ({
   }, [apiEmbeddingModel, settings, onSettingsChange, currentSettings]);
 
   const handleSettingsChange = (newSettings: Partial<IngestSettingsType>) => {
-    const updatedSettings = { ...currentSettings, ...newSettings };
-    onSettingsChange?.(updatedSettings);
+    onSettingsChange?.({ ...currentSettings, ...newSettings });
   };
 
   return (

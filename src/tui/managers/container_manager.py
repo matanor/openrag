@@ -1302,7 +1302,7 @@ class ContainerManager:
 
         # Stop and remove everything
         success, stdout, stderr = await self._run_compose_command(
-            ["down", "--volumes", "--remove-orphans", "--rmi", "local"]
+            ["down", "--volumes", "--remove-orphans"]
         )
 
         if not success:

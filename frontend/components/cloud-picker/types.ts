@@ -111,3 +111,16 @@ export interface IngestSettings {
   pictureDescriptions: boolean;
   embeddingModel: string;
 }
+
+/** Inline error message if chunk settings are invalid; otherwise null. */
+export function getIngestChunkSettingsError(
+  settings: Pick<IngestSettings, "chunkSize" | "chunkOverlap">,
+): string | null {
+  if (settings.chunkSize < 1) {
+    return "Chunk size must be at least 1";
+  }
+  if (settings.chunkOverlap >= settings.chunkSize) {
+    return "Chunk overlap must be less than chunk size";
+  }
+  return null;
+}

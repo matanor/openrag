@@ -204,6 +204,7 @@ class ConfigScreen(Screen):
         "opensearch_data_path",
         "langflow_superuser_password",
         "langflow_superuser",
+        "langflow_data_path",
         "google_oauth_client_id",
         "microsoft_graph_oauth_client_id",
         "openrag_documents_paths",
@@ -302,6 +303,25 @@ class ConfigScreen(Screen):
         yield Horizontal(
             Button("Pick…", id="pick-opensearch-data-btn"),
             id="opensearch-data-path-actions",
+            classes="controls-row",
+        )
+        self.inputs[field.name] = input_widget
+        yield Static(" ")
+
+    def _render_langflow_data_path(self, field: ConfigField) -> ComposeResult:
+        """Langflow data path with file picker."""
+        yield Label(field.label)
+        yield Static(field.helper_text, classes="helper-text")
+        current_value = getattr(self.env_manager.config, field.name, field.default)
+        input_widget = Input(
+            placeholder=field.placeholder,
+            value=current_value,
+            id=f"input-{field.name}",
+        )
+        yield input_widget
+        yield Horizontal(
+            Button("Pick…", id="pick-langflow-data-btn"),
+            id="langflow-data-path-actions",
             classes="controls-row",
         )
         self.inputs[field.name] = input_widget
@@ -457,6 +477,8 @@ class ConfigScreen(Screen):
             self.action_pick_documents_path()
         elif event.button.id == "pick-opensearch-data-btn":
             self.action_pick_opensearch_data_path()
+        elif event.button.id == "pick-langflow-data-btn":
+            self.action_pick_langflow_data_path()
         elif event.button.id and event.button.id.startswith("toggle-"):
             # Generic toggle for password/secret field visibility
             field_name = event.button.id.removeprefix("toggle-")
@@ -656,6 +678,58 @@ class ConfigScreen(Screen):
             self._opensearch_data_pick_callback = _set_path  # type: ignore[attr-defined]
             self.app.push_screen(picker)
 
+    def action_pick_langflow_data_path(self) -> None:
+        """Open textual-fspicker to select Langflow data directory."""
+        try:
+            import importlib
+
+            fsp = importlib.import_module("textual_fspicker")
+        except Exception:
+            self.notify("textual-fspicker not available", severity="warning")
+            return
+
+        input_widget = self.inputs.get("langflow_data_path")
+        start = Path.home()
+        if input_widget and input_widget.value:
+            path_str = input_widget.value.strip()
+            if path_str:
+                candidate = Path(path_str).expanduser()
+                if candidate.exists():
+                    start = candidate
+                elif candidate.parent.exists():
+                    start = candidate.parent
+
+        PickerClass = getattr(fsp, "SelectDirectory", None) or getattr(
+            fsp, "FileOpen", None
+        )
+        if PickerClass is None:
+            self.notify(
+                "No compatible picker found in textual-fspicker", severity="warning"
+            )
+            return
+        try:
+            picker = PickerClass(location=start)
+        except Exception:
+            try:
+                picker = PickerClass(start)
+            except Exception:
+                self.notify("Could not initialize textual-fspicker", severity="warning")
+                return
+
+        def _set_path(result) -> None:
+            if not result:
+                return
+            path_str = str(result)
+            if input_widget is None:
+                return
+            input_widget.value = path_str
+
+        try:
+            self.app.push_screen(picker, _set_path)  # type: ignore[arg-type]
+        except TypeError:
+            self._langflow_data_pick_callback = _set_path  # type: ignore[attr-defined]
+            self.app.push_screen(picker)
+
     def on_screen_dismissed(self, event) -> None:  # type: ignore[override]
         try:
             # textual-fspicker screens should dismiss with a result; hand to callback if present
@@ -673,6 +747,15 @@ class ConfigScreen(Screen):
                 cb(getattr(event, "result", None))
                 try:
                     delattr(self, "_opensearch_data_pick_callback")
+                except Exception:
+                    pass
+
+            # Handle Langflow data path picker callback
+            cb = getattr(self, "_langflow_data_pick_callback", None)
+            if cb is not None:
+                cb(getattr(event, "result", None))
+                try:
+                    delattr(self, "_langflow_data_pick_callback")
                 except Exception:
                     pass
         except Exception:

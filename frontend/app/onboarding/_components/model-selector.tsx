@@ -70,9 +70,10 @@ export function ModelSelector({
 
   useEffect(() => {
     if (
+      allOptions.length > 0 &&
       value &&
       value !== "" &&
-      !allOptions.find((option) => option.value === value) &&
+      !allOptions.some((option) => option.value === value) &&
       !custom
     ) {
       onValueChange("");

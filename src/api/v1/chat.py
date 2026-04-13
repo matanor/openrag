@@ -295,6 +295,8 @@ async def chat_delete_endpoint(
     """Delete a conversation. DELETE /v1/chat/{chat_id}"""
     try:
         result = await chat_service.delete_session(user.user_id, chat_id)
+        if result.get("not_found"):
+            return JSONResponse({"error": "Conversation not found"}, status_code=404)
         if result.get("success"):
             return JSONResponse({"success": True})
         else:
